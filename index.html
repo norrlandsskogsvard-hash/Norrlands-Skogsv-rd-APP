@@ -39,6 +39,7 @@ body {
     box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
     max-width: 600px; 
     margin: 0 auto 20px auto; 
+    display: block;
 }
 
 input, select, textarea { 
@@ -116,6 +117,7 @@ button { padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-
 .sig-canvas { display: block; width: 100%; height: 130px; background: #fff; cursor: crosshair; touch-action: none; }
 .clear-sig-btn { position: absolute; right: 5px; top: 5px; background: var(--danger-color); color: white; padding: 4px 8px; font-size: 11px; border-radius: 4px; border:none; cursor:pointer; }
 
+/* FIX: Göm utskriftsvyn helt i app-läget så att den inte blockerar klick */
 #quote-printout { display: none; background: white; padding: 35px; max-width: 800px; margin: 0 auto; border: 1px solid #ccc; box-sizing: border-box; }
 .quote-top-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
 .quote-logo-container { max-width: 200px; min-height: 50px; }
@@ -173,7 +175,6 @@ window.onload = function() {
     setupCanvas();
     generateStaticDocNumber();
     
-    // Förbättring: Läs in varukorg från LocalStorage om den finns sparad sedan tidigare fältbesök
     if (localStorage.getItem('ns_cart_backup')) {
         try {
             cart = JSON.parse(localStorage.getItem('ns_cart_backup'));
@@ -304,7 +305,6 @@ function pressKey(tab, key) {
     }
 }
 
-// --- DGV LOGIK ---
 let diameters = [];
 function nextTree() {
     const inputField = document.getElementById('tree-value');
@@ -343,8 +343,6 @@ function linkDgvToApp(val) {
 }
 function resetDgvApp() { diameters = []; updateDgvUI(); document.getElementById('result-output').style.display = "none"; }
 
-
-// --- ENBART ARITMETISK MEDELHÖJD LOGIK (HGV BORTTAGEN) ---
 let hmHeights = [];
 function nextHmTree() {
     const hInput = document.getElementById('hm-hojd-input');
@@ -388,8 +386,6 @@ function linkHmToApp(val) {
 }
 function resetHmApp() { hmHeights = []; updateHmUI(); document.getElementById('hm-result-output').style.display = "none"; }
 
-
-// --- KALKYLERINGSLOGIK ---
 function getRojningData() {
     const stammar = parseFloat(document.getElementById('roj-stammar').value);
     const hojd = parseFloat(document.getElementById('roj-hojd').value);
@@ -476,7 +472,6 @@ function getGallringData() {
     const virkespris = parseFloat(localStorage.getItem('pr_gallring_pris'));
     const drivningskostnad = parseFloat(localStorage.getItem('pr_gallring_drivning'));
 
-    // Formel anpassad baserat på Aritmetisk medelhöjd (hm) istället för hgv
     let volymPerHa = gy * hojd * 0.45; 
     let totalVolym = volymPerHa * ha;
     let gallradVolym = totalVolym * (uttagPct / 100);
@@ -552,7 +547,6 @@ function calculatePlan() {
     document.getElementById('plan-result-output').innerHTML = `Kostnad exkl: ${Math.round(data.exkl).toLocaleString()} kr`;
 }
 
-// --- VARUKORGSSYSTEM MED LOCALSTORAGE BACKUP ---
 function addToCart(type) {
     let itemData = null;
     if(type === 'roj') itemData = getRojningData();
@@ -563,7 +557,6 @@ function addToCart(type) {
     if(!itemData) { alert("Kalkylen är inte komplett fylld."); return; }
     
     cart.push(itemData);
-    // Spara backup automatiskt
     localStorage.setItem('ns_cart_backup', JSON.stringify(cart));
     updateCartUI();
     alert(`${itemData.type} har lagts till i din fältoffert!`);
@@ -602,7 +595,6 @@ function updateCartUI() {
     });
 }
 
-// --- GENERERA OFFERT & TEXTEXPORT ---
 function buildFinalQuote() {
     if(cart.length === 0) { alert("Varukorgen är tom. Lägg till minst en åtgärd."); return; }
     saveSettings();
@@ -709,7 +701,7 @@ function buildFinalQuote() {
 
     let termsText = "<strong>Standardvillkor & Allmänna bestämmelser:</strong><br>";
     if (harSkogsvard || harGallring) {
-        termsText += "• Fastighetsägaren ansvarar för att tillse att fastighetsgränser och arbetsområden är tillräckligt markerade i fält innan arbetets start.<br>";
+        termsText += "• Fastighetsägaren ansvarar för att tillse att fastighetsgränser and arbetsområden är tillräckligt markerade i fält innan arbetets start.<br>";
     }
     if (harGallring) {
         termsText += "• Volymberäkningar är uppskattningar grundade på aritmetiskt fältstickprov (h_m). Slutlig inmätning sker vid industri/mottagande vält.<br>";
@@ -732,42 +724,30 @@ function buildFinalQuote() {
     document.getElementById('sig-kund-meta').innerText = `${inmatadOrt}, ___________`;
     document.getElementById('print-sig').src = canvas.toDataURL();
 
+    // Visa utskriftsblock och göm applikationskortet
     document.querySelector('.card').style.display = 'none';
     document.getElementById('quote-printout').style.display = 'block';
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// Förbättring: Exportera hela offerten som ren text (lätt att kopiera till SMS/WhatsApp/Mail direkt i mobilen)
 function copyQuoteAsText() {
     const kund = document.getElementById('quote-kund-namn').value || "Kund";
     const fastighet = document.getElementById('quote-fastighet').value || "Fastighet";
     const nr = currentDocNumber;
     
-    let textOut = `--- SKOGSKALKYLATOR PRO FÄLT ---
-Dokumentnr: ${nr}
-Kund: ${kund}
-Fastighet: ${fastighet}
-
-Specifikation:
-`;
+    let textOut = `--- SKOGSKALKYLATOR PRO FÄLT ---\nDokumentnr: ${nr}\nKund: ${kund}\nFastighet: ${fastighet}\n\nSpecifikation:\n`;
     
     cart.forEach(item => {
-        textOut += `- ${item.type}: ${item.vol} | Netto: ${Math.round(item.exkl)} kr
-  (${item.spec})
-`;
+        textOut += `- ${item.type}: ${item.vol} | Netto: ${Math.round(item.exkl)} kr\n  (${item.spec})\n`;
     });
     
     const totText = document.getElementById('q-tot-exkl').innerText;
-    textOut += `
-Slutsumma exkl moms: ${totText} kr
-Genererad i fält via PWA-applikation.`;
+    textOut += `\nSlutsumma exkl moms: ${totText} kr\nGenererad i fält via PWA-applikation.`;
     
     navigator.clipboard.writeText(textOut).then(() => {
         alert("Offertexten har kopierats till urklipp! Nu kan du klistra in den i ett SMS, Mail eller WhatsApp.");
     }).catch(err => {
-        alert("Kunde inte kopiera automatiskt. Kopiera manuellt:
-
-" + textOut);
+        alert("Kunde inte kopiera automatiskt. Kopiera manuellt:\n\n" + textOut);
     });
 }
 
@@ -777,7 +757,6 @@ function backToApp() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// --- RELASKOP ---
 let relCount = 0;
 function countRel(val) {
     relCount = Math.max(0, relCount + val);
@@ -839,7 +818,6 @@ function sendRelToGallring() {
         <button type="button" class="tab-btn" onclick="switchTab('prices-tab', this)" style="background:#eef7f2; color:#27ae60;">⚙️ Priser</button>
     </div>
 
-    <!-- DGV TAB -->
     <div id="dgv-tab" class="tab-content active">
         <h2>Träddiameter <span id="tree-title-num">1</span></h2>
         <div class="sub">Beräkning av grundytevägd medeldiameter (d<sub>gv</sub>)</div>
@@ -868,7 +846,6 @@ function sendRelToGallring() {
         <button type="button" class="btn-reset" onclick="resetDgvApp()">Nollställ mätning</button>
     </div>
 
-    <!-- ENBART ARITMETISK MEDELHÖJD TAB -->
     <div id="hm-tab" class="tab-content">
         <h2>Aritmetisk Trädhöjd <span id="hm-title-num">1</span></h2>
         <div class="sub">Beräknar fältbaserad Aritmetisk medelhöjd (h<sub>m</sub>) för beståndet</div>
@@ -898,7 +875,6 @@ function sendRelToGallring() {
         <button type="button" class="btn-reset" onclick="resetHmApp()">Nollställ mätning</button>
     </div>
 
-    <!-- RÖJNING TAB -->
     <div id="rojning-tab" class="tab-content">
         <h2>Röjningskalkylator</h2>
         <div class="sub">Beräknar tidsåtgång utifrån stamantal och höjd</div>
@@ -924,7 +900,6 @@ function sendRelToGallring() {
         <div class="result" id="roj-result-output" style="display:none;"></div>
     </div>
 
-    <!-- PLANTERING TAB -->
     <div id="plant-tab" class="tab-content">
         <h2>Plantering & Markberedning</h2>
         <div class="row">
@@ -939,7 +914,6 @@ function sendRelToGallring() {
         <div class="result" id="plant-result-output" style="display:none;"></div>
     </div>
 
-    <!-- GALLRING TAB -->
     <div id="gallring-tab" class="tab-content">
         <h2>Gallringsanalys (Anpassad efter h<sub>m</sub>)</h2>
         <div class="row">
@@ -963,7 +937,6 @@ function sendRelToGallring() {
         <div class="warning-box" id="gallring-warn-box" style="display:none;"></div>
     </div>
 
-    <!-- SKOGSBRUKSPLAN TAB -->
     <div id="plan-tab" class="tab-content">
         <h2>Skogsbruksplanering</h2>
         <label>Total fastighetsareal (ha):</label>
@@ -978,7 +951,6 @@ function sendRelToGallring() {
         <div class="result" id="plan-result-output" style="display:none;"></div>
     </div>
 
-    <!-- DIGITALT RELASKOP TAB -->
     <div id="field-tab" class="tab-content">
         <h2>Digitalt Relaskop</h2>
         <div style="text-align: center; background: #edf2f7; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 10px;">
@@ -995,7 +967,6 @@ function sendRelToGallring() {
         </div>
     </div>
 
-    <!-- PRISER TAB -->
     <div id="prices-tab" class="tab-content">
         <h2>⚙️ Pris- & Taxekonfiguration</h2>
         <div class="sub">Ändringar sparas automatiskt lokalt på enheten.</div>
@@ -1029,7 +1000,6 @@ function sendRelToGallring() {
         <input type="number" id="pr-transport_milpris" onchange="savePrice('transport_milpris', this.value)">
     </div>
 
-    <!-- AKTUELL VARUKORG -->
     <div style="margin-top: 15px; padding: 12px; background: #f0f4f8; border: 1px solid var(--border-color); border-radius: 8px;">
         <h3 style="margin:0 0 8px 0; font-size:14px; color:var(--primary-color);">🛒 Aktuell Varukorg <span class="cart-badge" id="cart-count">0</span></h3>
         <div id="cart-items-list"></div>
@@ -1048,8 +1018,6 @@ function sendRelToGallring() {
     </fieldset>
 </div>
 
-
-<!-- UTSKRIFT / PDF PLAN -->
 <div id="quote-printout">
     <div class="no-print" style="margin-bottom:15px; display:flex; gap:10px;">
         <button type="button" class="no-print-btn" style="margin-bottom:0;" onclick="backToApp()">← Tillbaka</button>
