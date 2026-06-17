@@ -404,36 +404,43 @@
     }
 
     // GPS & Fastighetsuppslag via Öppna Data API
-    function setCoordinates(lat, lng) {
-      const fixedLat = lat.toFixed(5);
-      const fixedLng = lng.toFixed(5);
-      document.getElementById('kund-gps').value = `${fixedLat}, ${fixedLng}`;
-      
-      if (marker) {
-        marker.setLatLng([lat, lng]);
-      } else {
-        marker = L.marker([lat, lng], {draggable: true}).addTo(map);
-        marker.on('dragend', function(e) {
-          const newPos = marker.getLatLng();
-          setCoordinates(newPos.lat, newPos.lng);
-        });
-      }
+function setCoordinates(lat, lng) {
+  const fixedLat = lat.toFixed(5);
+  const fixedLng = lng.toFixed(5);
+  document.getElementById('kund-gps').value = `${fixedLat}, ${fixedLng}`;
+  
+  if (marker) {
+    marker.setLatLng([lat, lng]);
+  } else {
+    marker = L.marker([lat, lng], {draggable: true}).addTo(map);
+    marker.on('dragend', function(e) {
+      const newPos = marker.getLatLng();
+      setCoordinates(newPos.lat, newPos.lng);
+    });
+  }
 
-      // Reverse geocoding för orts- och fastighetsförslag
-      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`)
-        .then(res => res.json())
-        .then(data => {
-          if (data && data.address) {
-            const skogsOrt = data.address.suburb || data.address.village || data.address.municipality || "";
-            const kommun = data.address.county || "";
-            if (skogsOrt) {
-              document.getElementById('kund-ort').value = skogsOrt;
-              document.getElementById('kund-fastighet').value = `${skogsOrt} Skogsskifte (${kommun.replace('kommuns valkrets', '').trim()})`;
-            }
-          }
-        })
-        .catch(() => console.log("Fastighetsuppslag offline. Fortsätter manuellt."));
-    }
+  // REVERSE GEOCODING + AUTOMATISK GEOGRAFISK PRISMATCHNING
+  fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`)
+    .then(res => res.json())
+    .then(data => {
+      if (data && data.address) {
+        const skogsOrt = data.address.suburb || data.address.village || data.address.municipality || "";
+        const lan = data.address.state || ""; // Hämtar t.ex. "Västernorrlands län" eller "Gävleborgs län"
+        const kommun = data.address.county || "";
+        
+        if (skogsOrt) {
+          document.getElementById('kund-ort').value = skogsOrt;
+          document.getElementById('kund-fastighet').value = `${skogsOrt} Skogsskifte (${kommun.replace('kommuns valkrets', '').trim()})`;
+        }
+
+        // Trigga geografisk prishämtning baserat på län
+        if (lan) {
+          matchGeographicPrice(lan);
+        }
+      }
+    })
+    .catch(() => console.log("Fastighetsuppslag offline. Fortsätter med manuella priser."));
+}
 
     function getGPS() {
       if (navigator.geolocation) {
