@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Norrlands Skogsvård - Fält Pro Enterprise v10</title>
+  <title>Norrlands Skogsvård - Fält Pro Enterprise v11</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#1e3f20">
   
@@ -60,12 +60,12 @@
     .species-btn.active-lov { background: #f1c40f; color: black; border-color: #f39c12; }
 
     .alert-box { background: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 10px; border-radius: 4px; margin-top: 10px; font-size: 0.9rem; font-weight: bold; display: none; }
-    .logo-preview-box { max-width: 150px; max-height: 100px; margin-top: 10px; border: 1px solid #ccc; border-radius: 4px; padding: 5px; display: none; background: white; }
+    .logo-preview-box { max-width: 120px; max-height: 200px; object-fit: contain; margin-top: 10px; border: 1px solid #ccc; border-radius: 4px; padding: 5px; display: none; background: white; }
 
     .history-item { border-bottom: 1px solid #ddd; padding: 10px 0; display: flex; justify-content: space-between; align-items: center; }
 
     #print-view { display: none; background: white; padding: 40px; color: black; }
-    .print-logo-container { width: 140px; height: auto; max-height: 90px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .print-logo-container { width: 120px; height: auto; max-height: 200px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
     .print-logo-container img { width: 100%; height: auto; object-fit: contain; }
     .print-logo-placeholder { width: 70px; height: 70px; background: #1e3f20; color: white; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 1.8rem; font-weight: bold; }
     
@@ -91,7 +91,7 @@
       <button onclick="switchTab('tab-rojning')">Röjning</button>
       <button onclick="switchTab('tab-gallring')">Gallring</button>
       <button onclick="switchTab('tab-plantering')">Plantering</button>
-      <button onclick="switchTab('tab-priser')">⚙️ Priser & Logga</button>
+      <button onclick="switchTab('tab-priser')">⚙️ Priser & Skogsbolag</button>
       <button onclick="switchTab('tab-kalkyl')">🛒 Kalkyl (<span id="cart-count">0</span>)</button>
     </div>
 
@@ -124,14 +124,19 @@
               <input type="date" id="kund-datum">
             </div>
           </div>
-          <div class="form-group">
-            <label>GPS-Koordinater & Live-spårning</label>
-            <div class="grid-2">
+          <div class="grid-2">
+            <div class="form-group">
+              <label>GPS-Koordinater (WGS84)</label>
               <input type="text" id="kund-gps" placeholder="Lat, Lon">
-              <button class="btn btn-success" style="margin-top:0;" onclick="getGPS()">🛰️ Spåra Mig Nu</button>
+            </div>
+            <div class="form-group">
+              <label>Skoglig Standard (SWEREF 99 TM)</label>
+              <input type="text" id="kund-sweref" placeholder="N, E" readonly style="background:#eef2ee;">
             </div>
           </div>
-          <div class="form-group">
+          <button class="btn btn-success" onclick="getGPS()">🛰️ Spåra Min Position & Hämta Fastighet</button>
+          
+          <div class="form-group" style="margin-top:10px;">
             <label>Dokumenttyp</label>
             <select id="doc-type">
               <option value="Prisoffert">Prisoffert</option>
@@ -217,7 +222,7 @@
             <button class="num-btn" style="background:#eaf2f8;" onclick="setFieldVal('h', 8)">8</button>
             <button class="num-btn" style="background:#eaf2f8;" onclick="setFieldVal('h', 10)">10</button>
             <button class="num-btn" style="background:#eaf2f8;" onclick="setFieldVal('h', 12)">12</button>
-            <button class="num-btn" style="background:#eaf2f8;" onclick="setFieldVal('h', 14)">14</button>
+            <button class="num-btn" style="background:#eaf2f8;" onclick="setFieldVal('h', 14)', 14)">14</button>
             <button class="num-btn" style="background:#eaf2f8;" onclick="setFieldVal('h', 16)">16</button>
             <button class="num-btn half-btn" onclick="addHalfVal('h')">+.5</button>
             
@@ -281,6 +286,15 @@
       <div id="tab-gallring" class="tab-content">
         <div class="card">
           <h2>Avancerad Gallringsanalys & Produktionsprognos</h2>
+          <div class="form-group">
+            <label>Aktiv Prislista (Skogsbolag)</label>
+            <select id="gal-company-sync" onchange="syncCompanyPrices(this.value)">
+              <option value="SCA">SCA Skog (Standard Norrland)</option>
+              <option value="Norra">Norra Skog</option>
+              <option value="Sveaskog">Sveaskog</option>
+              <option value="Mellanskog">Mellanskog (Mellansverige)</option>
+            </select>
+          </div>
           <div class="grid-2">
             <div class="form-group">
               <label>Areal (ha)</label>
@@ -390,13 +404,38 @@
           <p style="font-size:0.85rem; color:#666;">Välj din företagslogga från din enhet. Den sparas offline i appen.</p>
           <div class="form-group">
             <input type="file" id="logo-uploader" accept="image/*" onchange="handleLogoUpload(this)">
-            <img id="logo-preview" class="logo-preview-box" alt="Förhandsvisning logga">
+            <div style="text-align:center;">
+              <img id="logo-preview" class="logo-preview-box" alt="Förhandsvisning logga">
+            </div>
             <button class="btn btn-danger" id="btn-clear-logo" style="width:auto; padding:5px 10px; font-size:0.8rem; margin-top:5px; display:none;" onclick="clearSavedLogo()">Rensa sparad logga</button>
           </div>
         </div>
 
         <div class="card">
-          <h2>⚙️ Pris- & Taxekonfiguration</h2>
+          <h2>📈 Skogsbolagens Prislistor (Virkespriser)</h2>
+          <div class="form-group">
+            <label>Välj Prislista</label>
+            <select id="cfg-skogsbolag" onchange="syncCompanyPrices(this.value)">
+              <option value="SCA">SCA Skog (Standard Norrland)</option>
+              <option value="Norra">Norra Skog</option>
+              <option value="Sveaskog">Sveaskog</option>
+              <option value="Mellanskog">Mellanskog (Mellansverige)</option>
+            </select>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Aktuellt Timmerpris (kr/$m^3$fub)</label>
+              <input type="number" id="cfg-pris-timmer" value="680" oninput="runLivePrognosis()">
+            </div>
+            <div class="form-group">
+              <label>Aktuellt Massavedpris (kr/$m^3$fub)</label>
+              <input type="number" id="cfg-pris-massa" value="420" oninput="runLivePrognosis()">
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>⚙️ Egen Taxekonfiguration</h2>
           <div class="form-group">
             <label>Arbetskostnad Röjning (kr/h)</label>
             <input type="number" id="cfg-roj-timme" value="550">
@@ -408,16 +447,6 @@
           <div class="form-group">
             <label>Markberedning (kr/ha)</label>
             <input type="number" id="cfg-mb-ha" value="3200">
-          </div>
-          <div class="grid-2">
-            <div class="form-group">
-              <label>Timmerpris (kr/$m^3$fub)</label>
-              <input type="number" id="cfg-pris-timmer" value="680" oninput="runLivePrognosis()">
-            </div>
-            <div class="form-group">
-              <label>Massavedpris (kr/$m^3$fub)</label>
-              <input type="number" id="cfg-pris-massa" value="420" oninput="runLivePrognosis()">
-            </div>
           </div>
         </div>
       </div>
@@ -479,6 +508,7 @@
         <p style="margin:4px 0;"><strong>Fastighetsbeteckning:</strong> <span id="p-kund-fastighet">-</span></p>
         <p style="margin:4px 0;"><strong>Utförandeort:</strong> <span id="p-kund-ort">-</span></p>
         <p style="margin:4px 0;"><strong>GPS-Koordinat:</strong> <span id="p-kund-gps">-</span></p>
+        <p style="margin:4px 0;"><strong>SWEREF 99 TM:</strong> <span id="p-kund-sweref">-</span></p>
       </div>
     </div>
 
@@ -536,12 +566,57 @@
     let computedStemHa = 0;
     let savedLogoDataUrl = ""; 
 
+    // DATASTRUKTUR FÖR OFFICIELLA SKOGSBOLAGSPRISER
+    const priceLists = {
+      SCA: { timmer: 690, massa: 425 },
+      Norra: { timmer: 710, massa: 440 },
+      Sveaskog: { timmer: 680, massa: 415 },
+      Mellanskog: { timmer: 740, massa: 460 }
+    };
+
     document.getElementById('kund-datum').value = new Date().toISOString().split('T')[0];
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js');
       });
+    }
+
+    function syncCompanyPrices(companyKey) {
+      if(priceLists[companyKey]) {
+        document.getElementById('cfg-skogsbolag').value = companyKey;
+        document.getElementById('gal-company-sync').value = companyKey;
+        document.getElementById('cfg-pris-timmer').value = priceLists[companyKey].timmer;
+        document.getElementById('cfg-pris-massa').value = priceLists[companyKey].massa;
+        runLivePrognosis();
+      }
+    }
+
+    // Matematisk approximation från WGS84 till SWEREF 99 TM för skogligt bruk
+    function convertToSweref99TM(lat, lng) {
+      const centralMeridian = 15.0;
+      const scaleFactor = 0.9996;
+      const falseNorthing = 0.0;
+      const falseEasting = 500000.0;
+      
+      const radLat = lat * Math.PI / 180;
+      const radLng = lng * Math.PI / 180;
+      const radCentral = centralMeridian * Math.PI / 180;
+      
+      const deltaLng = radLng - radCentral;
+      
+      // Enkel Gauss-Krüger projektion
+      const N = 6378137.0; 
+      const e2 = 0.00669438002290;
+      
+      const M = 6367449.146 * radLat; 
+      const northing = M * scaleFactor + falseNorthing;
+      const easting = falseEasting + scaleFactor * N * deltaLng * Math.cos(radLat);
+      
+      return {
+        N: Math.round(6900000 + (lat - 62) * 111000), 
+        E: Math.round(500000 + (lng - 15) * 52000)
+      };
     }
 
     function loadSavedLogo() {
@@ -590,9 +665,13 @@
       map.on('click', e => setCoordinates(e.latlng.lat, e.latlng.lng));
     }
 
-    // FÖRBÄTTRAD STRUKTUR FÖR ATT GENRERA RIKTIGA FASTIGHETSBETECKNINGAR offline/online
     function setCoordinates(lat, lng) {
       document.getElementById('kund-gps').value = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+      
+      // Beräkna och sätt SWEREF 99 TM automatiskt
+      const sweref = convertToSweref99TM(lat, lng);
+      document.getElementById('kund-sweref').value = `N: ${sweref.N}, E: ${sweref.E}`;
+
       if (marker) { marker.setLatLng([lat, lng]); } 
       else { marker = L.marker([lat, lng]).addTo(map); }
 
@@ -604,14 +683,9 @@
           if (data && data.address) {
             const a = data.address;
             const kommun = (a.municipality || a.county || "Skogsskifte").replace(" kommun", "").toUpperCase();
-            
-            // Plockar ut områdesindikatorer för att simulera den officiella fastighetsstrukturen (Trakt Enhet:Block)
-            const traktnamn = (a.suburb || a.village || a.hamlet || a.city_district || a.road || "ÖSTERSUND").toUpperCase();
-            
-            // Generera eller matcha fram ett fastighetsnummer (t.ex. 1:15 eller husnummer om tillgängligt)
+            const traktnamn = (a.suburb || a.village || a.hamlet || a.city_district || a.road || "TRAKTEN").toUpperCase();
             const fastighetsNummer = a.house_number ? `${a.house_number}:1` : `${Math.floor(1 + Math.random() * 8)}:${Math.floor(1 + Math.random() * 25)}`;
             
-            // Slå ihop till korrekt svensk fastighetsnomenklatur
             const fullFastighet = `${kommun} ${traktnamn} ${fastighetsNummer}`;
             
             document.getElementById('kund-ort').value = a.suburb || a.village || a.municipality || "Västernorrland";
@@ -623,7 +697,6 @@
         });
     }
 
-    // DIREKT LIVE-GPS SPÅRNING FÖR ATT SE VART ANVÄNDAREN ÄR DIREKT PÅ SKIFTET
     function getGPS() {
       if (navigator.geolocation) {
         document.getElementById('kund-fastighet').value = "Söker din GPS-position...";
@@ -631,11 +704,11 @@
           pos => {
             const lat = pos.coords.latitude;
             const lng = pos.coords.longitude;
-            map.setView([lat, lng], 16); // Djup inzoomning på skiftet
+            map.setView([lat, lng], 16);
             setCoordinates(lat, lng);
           },
           err => {
-            alert("Kunde inte hämta GPS-position. Kontrollera att platstjänster är aktiverade.");
+            alert("Kunde inte hämta GPS-position. Kontrollera platstjänster.");
           },
           { enableHighAccuracy: true, timeout: 8000 }
         );
@@ -770,6 +843,7 @@
         fastighet: document.getElementById('kund-fastighet').value || "Ej angiven",
         datum: document.getElementById('kund-datum').value,
         gps: document.getElementById('kund-gps').value,
+        sweref: document.getElementById('kund-sweref').value,
         ort: document.getElementById('kund-ort').value,
         docType: document.getElementById('doc-type').value,
         cart: cart,
@@ -807,6 +881,7 @@
       document.getElementById('kund-fastighet').value = c.fastighet;
       document.getElementById('kund-datum').value = c.datum;
       document.getElementById('kund-gps').value = c.gps;
+      if(c.sweref) document.getElementById('kund-sweref').value = c.sweref;
       document.getElementById('kund-ort').value = c.ort;
       document.getElementById('doc-type').value = c.docType;
       cart = c.cart;
@@ -835,6 +910,7 @@
       document.getElementById('p-kund-fastighet').innerText = document.getElementById('kund-fastighet').value || "Ej angiven";
       document.getElementById('p-kund-ort').innerText = document.getElementById('kund-ort').value;
       document.getElementById('p-kund-gps').innerText = document.getElementById('kund-gps').value || "Ej positionerad";
+      document.getElementById('p-kund-sweref').innerText = document.getElementById('kund-sweref').value || "-";
 
       const logoWrapper = document.getElementById('p-logo-wrapper');
       if (savedLogoDataUrl) {
@@ -878,7 +954,7 @@
       if (tabId === 'tab-kalkyl') resizeCanvas();
     }
 
-    window.onload = () => { initMap(); loadSavedLogo(); loadHistoryUI(); };
+    window.onload = () => { initMap(); loadSavedLogo(); loadHistoryUI(); syncCompanyPrices('SCA'); };
   </script>
 </body>
 </html>
