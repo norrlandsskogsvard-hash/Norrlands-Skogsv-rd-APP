@@ -1,17 +1,17 @@
 {
-  "short_name": "SkogsvårdPro",
-  "name": "Norrlands Skogsvård Fält Pro Enterprise",
-  "icons": [
-    {
-      "src": "https://cdn-icons-png.flaticon.com/512/3331/3331265.png",
-      "type": "image/png",
-      "sizes": "512x512",
-      "purpose": "any maskable"
-    }
-  ],
+  "name": "Norrlands Skogsvård Fält Pro",
+  "short_name": "FältPro",
   "start_url": "./index.html",
+  "display": "standalone",
   "background_color": "#1e3f20",
   "theme_color": "#1e3f20",
-  "display": "standalone",
-  "orientation": "portrait"
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2823/2823101.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }
