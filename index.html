@@ -460,6 +460,15 @@
       <div id="tab-kalkyl" class="tab-content">
         <div class="card">
           <h2>🛒 Kalkylsammanställning</h2>
+          
+          <div class="form-group" style="background:#f9f9f9; padding:10px; border:1px solid #ddd; border-radius:6px; margin-bottom:15px;">
+            <label for="calc-mode" style="color:#1e3f20;">📊 Presentation av slutsumma på offert/skärm:</label>
+            <select id="calc-mode" onchange="updateCartUI()" style="background:white; font-weight:bold;">
+              <option value="netto">Visa som Netto/Balans (+/- Slutlikvid)</option>
+              <option value="kostnad">Visa som Ren Kostnadsoffert (Alltid positiv kostnad)</option>
+            </select>
+          </div>
+
           <div id="cart-items-container"></div>
           <div style="margin-top:15px; font-weight:bold; font-size:1.1rem; text-align:right;" id="cart-total">
             Totalt exkl. moms: 0 kr
@@ -534,7 +543,20 @@
     </table>
 
     <div style="overflow: hidden; page-break-inside: avoid;">
-      <div class="print-totals"></div>
+      <div class="print-totals">
+        <div class="print-totals-row">
+          <span style="font-weight:bold;" id="p-label-exkl">Slutbalans/Netto exkl. moms:</span>
+          <span id="p-total-exkl" style="font-weight:bold;">0 kr</span>
+        </div>
+        <div class="print-totals-row">
+          <span>Moms (25%):</span>
+          <span id="p-moms">0 kr</span>
+        </div>
+        <div class="print-totals-row grand-total">
+          <span>Totalt att betala/erhålla:</span>
+          <span id="p-total-inkl">0 kr</span>
+        </div>
+      </div>
     </div>
 
     <div class="print-section-title" style="margin-top:20px;">Entreprenörsinstruktion (Avvikelser & Hänsyn)</div>
