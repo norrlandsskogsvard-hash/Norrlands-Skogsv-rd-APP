@@ -75,9 +75,9 @@
     .print-table td { border-bottom: 1px solid #e0e0e0; padding: 10px 8px; font-size: 10pt; }
     .print-table tr:nth-child(even) { background-color: #fafafa; }
     
-    .print-totals { float: right; width: 300px; margin-top: 10px; margin-bottom: 40px; }
+    .print-totals { float: right; width: 340px; margin-top: 10px; margin-bottom: 40px; }
     .print-totals-row { display: flex; justify-content: space-between; padding: 4px 0; }
-    .print-totals-row.grand-total { border-top: 2px solid #1e3f20; font-size: 13pt; font-weight: bold; color: #1e3f20; padding-top: 8px; margin-top: 4px; }
+    .print-totals-row.grand-total { border-top: 2px solid #1e3f20; font-size: 12pt; font-weight: bold; color: #1e3f20; padding-top: 8px; margin-top: 4px; }
     
     .print-signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; margin-top: 80px; page-break-inside: avoid; }
     .signature-line { border-top: 1px solid #000; padding-top: 8px; font-size: 10pt; margin-top: 50px; }
@@ -164,7 +164,7 @@
             <label>➕ Lägg till maskinförarinstruktion vid markerad punkt:</label>
             <div class="grid-2" style="margin-top:5px;">
               <select id="note-type">
-                <option value="Miljöhänsyn / Naturvärde">Miljöhänsyn / Naturvärde (Bäck/Träd)</option>
+                <option value="Miljöhänsyn / Naturvärde">Miljöhänsyn / Naturvärde (Bäck/Traded)</option>
                 <option value="Otydlig Rågång">Otydlig Rågång (Måste snitslas)</option>
                 <option value="Vindfällen">Vindfällen (Tas med i uttag)</option>
                 <option value="Körskaderisk / Surhål">Körskaderisk / Surhål</option>
@@ -530,24 +530,11 @@
         </tr>
       </thead>
       <tbody id="p-tbody">
-        </tbody>
+      </tbody>
     </table>
 
     <div style="overflow: hidden; page-break-inside: avoid;">
-      <div class="print-totals">
-        <div class="print-totals-row">
-          <span>Netto totalt exkl. moms:</span>
-          <span id="p-total-exkl">0 kr</span>
-        </div>
-        <div class="print-totals-row" style="color:#555; font-size:10pt;">
-          <span>Mervärdesskatt (25%):</span>
-          <span id="p-moms">0 kr</span>
-        </div>
-        <div class="print-totals-row grand-total">
-          <span>Slutbelopp inkl. moms:</span>
-          <span id="p-total-inkl">0 kr</span>
-        </div>
-      </div>
+      <div class="print-totals"></div>
     </div>
 
     <div class="print-section-title" style="margin-top:20px;">Entreprenörsinstruktion (Avvikelser & Hänsyn)</div>
