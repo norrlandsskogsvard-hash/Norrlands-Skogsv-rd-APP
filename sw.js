@@ -1,5 +1,5 @@
-const CACHE_NAME = 'skogskalkyl-v3';
-const ASSETS = [
+const CACHE_NAME = 'norrlands-skogsvard-v3';
+const assets = [
   './',
   './index.html',
   './manifest.json',
@@ -7,40 +7,37 @@ const ASSETS = [
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
 ];
 
-self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS);
-    }).then(() => self.skipWaiting())
+// Installera Service Worker och cachelagra tillgångar
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.addAll(assets);
+    })
   );
+  self.skipWaiting();
 });
 
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys().then((keys) => {
+// Aktivera och rensa gamla cachar (t.ex. v1 eller v2)
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(keys => {
       return Promise.all(
-        keys.map((key) => {
+        keys.map(key => {
           if (key !== CACHE_NAME) {
             return caches.delete(key);
           }
         })
       );
-    }).then(() => self.clients.claim())
+    })
   );
+  self.clients.claim();
 });
 
-self.addEventListener('fetch', (e) => {
-  if (e.request.url.startsWith('http')) {
-    e.respondWith(
-      fetch(e.request).catch(() => {
-        return caches.match(e.request);
-      })
-    );
-  } else {
-    e.respondWith(
-      caches.match(e.request).then((cachedResponse) => {
-        return cachedResponse || fetch(e.request);
-      })
-    );
-  }
+// Network-first eller cache-fallback (Säkerställer offline-drift)
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    fetch(event.request).catch(() => {
+      return caches.match(event.request);
+    })
+  );
 });
