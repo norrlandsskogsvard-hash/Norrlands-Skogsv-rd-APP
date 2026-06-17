@@ -47,12 +47,12 @@
     #map { height: 320px; width: 100%; border-radius: 8px; margin-bottom: 10px; z-index: 1; }
     
     /* Canvas för signering */
-    .sig-canvas { border: 1px dashed #999; background: #fdfdfd; width: 100%; height: 120px; border-radius: 4px; }
+    .sig-canvas { border: 1px dashed #999; background: #fdfdfd; width: 100%; height: 150px; border-radius: 4px; display: block; }
     
     /* Kundvagn / Kalkylsammanställning */
     .cart-item { background: #f9f9f9; padding: 10px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
     
-    /* UTSKRIFTSVY (Dold på skärm, synlig vid print) */
+    /* UTSKRIFTSVY */
     #print-view { display: none; background: white; padding: 30px; color: black; }
     
     @media print {
@@ -122,7 +122,7 @@
         <div class="card">
           <h2>Fältkarta (Lantmäteriet Fallback & Satellit)</h2>
           <div id="map"></div>
-          <p style="font-size:0.8rem; color:#666; margin-top:5px;">Klicka i kartan för att sätta projektets mittpunkt samt hämta fastighetsinformation.</p>
+          <p style="font-size:0.8rem; color:#666; margin-top:5px;">Klicka i kartan för att sätta projektets mittpunkt samt hämta fastighetsinformation och lokala priser.</p>
           
           <div class="form-group" style="margin-top: 15px;">
             <label>Import av Skogsbruksplan (Ladda upp GeoJSON-fil):</label>
@@ -268,8 +268,7 @@
       <div id="tab-kalkyl" class="tab-content">
         <div class="card">
           <h2>🛒 Kalkylsammanställning</h2>
-          <div id="cart-items-container">
-            </div>
+          <div id="cart-items-container"></div>
           <div style="margin-top:15px; font-weight:bold; font-size:1.1rem; text-align:right;" id="cart-total">
             Totalt exkl. moms: 0 kr
           </div>
@@ -327,8 +326,7 @@
           <th>Belopp (exkl. moms)</th>
         </tr>
       </thead>
-      <tbody id="p-tbody">
-        </tbody>
+      <tbody id="p-tbody"></tbody>
     </table>
 
     <div style="text-align:right; margin-top:20px; font-size:1.2rem; font-weight:bold;">
@@ -339,8 +337,7 @@
 
     <div style="margin-top:30px;">
       <h4>Kartbilaga (Fastighets- & Geodatafält)</h4>
-      <div id="print-map-container" style="width:100%; height:320px; border:1px solid #ccc; text-align:center; position:relative; overflow:hidden;">
-        </div>
+      <div id="print-map-container" style="width:100%; height:320px; border:1px solid #ccc; text-align:center; position:relative; overflow:hidden;"></div>
     </div>
 
     <div style="margin-top:50px;" class="print-flex">
@@ -403,45 +400,44 @@
       });
     }
 
-    // GPS & Fastighetsuppslag via Öppna Data API
-function setCoordinates(lat, lng) {
-  const fixedLat = lat.toFixed(5);
-  const fixedLng = lng.toFixed(5);
-  document.getElementById('kund-gps').value = `${fixedLat}, ${fixedLng}`;
-  
-  if (marker) {
-    marker.setLatLng([lat, lng]);
-  } else {
-    marker = L.marker([lat, lng], {draggable: true}).addTo(map);
-    marker.on('dragend', function(e) {
-      const newPos = marker.getLatLng();
-      setCoordinates(newPos.lat, newPos.lng);
-    });
-  }
-
-  // REVERSE GEOCODING + AUTOMATISK GEOGRAFISK PRISMATCHNING
-  fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`)
-    .then(res => res.json())
-    .then(data => {
-      if (data && data.address) {
-        const skogsOrt = data.address.suburb || data.address.village || data.address.municipality || "";
-        const lan = data.address.state || ""; // Hämtar t.ex. "Västernorrlands län" eller "Gävleborgs län"
-        const kommun = data.address.county || "";
-        
-        if (skogsOrt) {
-          document.getElementById('kund-ort').value = skogsOrt;
-          document.getElementById('kund-fastighet').value = `${skogsOrt} Skogsskifte (${kommun.replace('kommuns valkrets', '').trim()})`;
-        }
-
-        // Trigga geografisk prishämtning baserat på län
-        if (lan) {
-          matchGeographicPrice(lan);
-        }
+    // GPS & Fastighetsuppslag med automatisk geografisk prismatchning
+    function setCoordinates(lat, lng) {
+      const fixedLat = lat.toFixed(5);
+      const fixedLng = lng.toFixed(5);
+      document.getElementById('kund-gps').value = `${fixedLat}, ${fixedLng}`;
+      
+      if (marker) {
+        marker.setLatLng([lat, lng]);
+      } else {
+        marker = L.marker([lat, lng], {draggable: true}).addTo(map);
+        marker.on('dragend', function(e) {
+          const newPos = marker.getLatLng();
+          setCoordinates(newPos.lat, newPos.lng);
+        });
       }
-    })
-    .catch(() => console.log("Fastighetsuppslag offline. Fortsätter med manuella priser."));
-}
 
+      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.address) {
+            const skogsOrt = data.address.suburb || data.address.village || data.address.municipality || "";
+            const lan = data.address.state || ""; 
+            const kommun = data.address.county || "";
+            
+            if (skogsOrt) {
+              document.getElementById('kund-ort').value = skogsOrt;
+              document.getElementById('kund-fastighet').value = `${skogsOrt} Skogsskifte (${kommun.replace('kommuns valkrets', '').trim()})`;
+            }
+
+            if (lan) {
+              matchGeographicPrice(lan);
+            }
+          }
+        })
+        .catch(() => console.log("Fastighetsuppslag offline. Fortsätter med manuella priser."));
+    }
+
+    // Geografisk prismatchning
     function matchGeographicPrice(lan) {
       const lanNamn = lan.toLowerCase();
       let valtBolag = "";
@@ -476,6 +472,7 @@ function setCoordinates(lat, lng) {
         console.log(`Geografisk prishämtning: Matchade ${lan} med ${data.bolag}`);
       }
     }
+
     function getGPS() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(function(pos) {
@@ -534,7 +531,7 @@ function setCoordinates(lat, lng) {
       }
     }
 
-    // Tab-hantering
+    // Tab-hantering med fix för dynamisk canvas-resize
     function switchTab(tabId) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.nav-tabs button').forEach(el => el.classList.remove('active'));
@@ -545,6 +542,11 @@ function setCoordinates(lat, lng) {
       
       if (tabId === 'tab-kund' && map) {
         setTimeout(() => map.invalidateSize(), 200);
+      }
+      
+      // FIX: Anpassa canvasens rityta när Kalkyl-fliken blir synlig
+      if (tabId === 'tab-kalkyl') {
+        resizeCanvas();
       }
     }
 
@@ -630,7 +632,7 @@ function setCoordinates(lat, lng) {
       if(localStorage.getItem('cfg_virke')) document.getElementById('cfg-virke').value = localStorage.getItem('cfg_virke');
     }
 
-    // GENERERA OFFERT & UTSKRIFT (SÄKRAD OCH BUGGFIXAD LOGIK)
+    // Generera offert
     function generateOffer() {
       if (cart.length === 0) {
         alert("❌ Kalkylen är tom. Lägg till åtgärder innan du skapar dokumentet.");
@@ -678,11 +680,11 @@ function setCoordinates(lat, lng) {
         sigImg.style.display = 'none';
       }
 
-      // Statisk kartbild för PDF-utskrift
+      // Statisk öppen kartbild (OpenStreetMap static api fallback utan krav på låst nyckel)
       const mapContainer = document.getElementById('print-map-container');
       if (marker) {
         const c = marker.getLatLng();
-        mapContainer.innerHTML = `<img src="https://maps.geoapify.com/v1/staticmap?style=osm-carto&width=600&height=320&center=lonlat:${c.lng},${c.lat}&zoom=14&marker=lonlat:${c.lng},${c.lat};color:%23ff0000;size:medium" style="width:100%; height:auto; object-fit:cover;" alt="Karta">`;
+        mapContainer.innerHTML = `<img src="https://maps.geoapify.com/v1/staticmap?style=osm-carto&width=600&height=320&center=lonlat:${c.lng},${c.lat}&zoom=13&marker=lonlat:${c.lng},${c.lat};color:%23ff0000;size:medium&apiKey=free" style="width:100%; height:auto; object-fit:cover;" alt="Karta">`;
       } else {
         mapContainer.innerHTML = '<p style="padding-top:140px; color:#666;">Ingen fältkoordinat vald.</p>';
       }
@@ -697,15 +699,24 @@ function setCoordinates(lat, lng) {
     const ctx = canvas.getContext('2d');
     let drawing = false;
 
-    canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight;
+    function resizeCanvas() {
+      // Sätt interna ritytan till elementets faktiska CSS-bredd och höjd när det visas
+      if (canvas.offsetWidth > 0) {
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+      }
+    }
+
     canvas.addEventListener('mousedown', () => drawing = true);
     canvas.addEventListener('mouseup', () => { drawing = false; ctx.beginPath(); });
     canvas.addEventListener('mousemove', draw);
+    
     canvas.addEventListener('touchstart', (e) => { drawing = true; e.preventDefault(); });
     canvas.addEventListener('touchend', () => { drawing = false; ctx.beginPath(); });
     canvas.addEventListener('touchmove', (e) => {
-      const t = e.touches[0]; const r = canvas.getBoundingClientRect();
-      draw({ clientX: t.clientX, clientY: t.clientY }); e.preventDefault();
+      const t = e.touches[0];
+      draw({ clientX: t.clientX, clientY: t.clientY });
+      e.preventDefault();
     });
 
     function draw(e) {
@@ -715,6 +726,7 @@ function setCoordinates(lat, lng) {
       ctx.lineTo(e.clientX - r.left, e.clientY - r.top);
       ctx.stroke(); ctx.beginPath(); ctx.moveTo(e.clientX - r.left, e.clientY - r.top);
     }
+    
     function clearSignature() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
 
     window.onload = () => { initMap(); loadPrices(); };
