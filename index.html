@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Norrlands Skogsvård - Fält Pro Enterprise v8</title>
+  <title>Norrlands Skogsvård - Fält Pro Enterprise v9</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#1e3f20">
   
@@ -46,10 +46,12 @@
     .sig-canvas { border: 1px dashed #999; background: #fdfdfd; width: 100%; height: 140px; border-radius: 4px; display: block; }
     .cart-item { background: #f9f9f9; padding: 10px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
     
-    .num-pad { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 10px; }
-    .num-btn { background: #e8efe9; border: 1px solid #bdcbd0; padding: 12px 4px; font-size: 1rem; font-weight: bold; border-radius: 6px; cursor: pointer; text-align: center; }
+    .num-pad { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 10px; }
+    .num-btn { background: #e8efe9; border: 1px solid #bdcbd0; padding: 12px 2px; font-size: 0.95rem; font-weight: bold; border-radius: 6px; cursor: pointer; text-align: center; }
     .num-btn:active { background: #cbdccf; }
-    .data-list { max-height: 140px; overflow-y: auto; background: #eee; padding: 8px; border-radius: 4px; font-size: 0.85rem; font-family: monospace; }
+    .num-btn.half-btn { background: #d5dbdb; border-color: #7f8c8d; color: #2c3e50; }
+    .num-btn.half-btn:active { background: #bdc3c7; }
+    .data-list { max-height: 160px; overflow-y: auto; background: #eee; padding: 8px; border-radius: 4px; font-size: 0.85rem; font-family: monospace; }
     
     .species-selector { display: flex; gap: 10px; margin-bottom: 12px; }
     .species-btn { flex: 1; padding: 10px; border: 2px solid #ccc; border-radius: 6px; font-weight: bold; cursor: pointer; text-align: center; background: #f9f9f9; }
@@ -185,11 +187,11 @@
           <div class="grid-2">
             <div class="form-group">
               <label>Vald Diameter (cm)</label>
-              <input type="number" id="field-d" value="16" readonly>
+              <input type="number" id="field-d" value="16" step="0.1">
             </div>
             <div class="form-group">
               <label>Vald Höjd (m)</label>
-              <input type="number" id="field-h" value="14" readonly>
+              <input type="number" id="field-h" value="14" step="0.1">
             </div>
           </div>
 
@@ -199,20 +201,26 @@
             <button class="num-btn" onclick="setFieldVal('d', 12)">12</button>
             <button class="num-btn" onclick="setFieldVal('d', 14)">14</button>
             <button class="num-btn" onclick="setFieldVal('d', 16)">16</button>
-            <button class="num-btn" onclick="setFieldVal('d', 18)">18</button>
+            <button class="num-btn" onclick="setFieldVal('d', 18)\">18</button>
+            <button class="num-btn half-btn" onclick="addHalfVal('d')">+.5</button>
+            
             <button class="num-btn" onclick="setFieldVal('d', 20)">20</button>
             <button class="num-btn" onclick="setFieldVal('d', 22)">22</button>
             <button class="num-btn" onclick="setFieldVal('d', 24)">24</button>
             <button class="num-btn" onclick="setFieldVal('d', 26)">26</button>
             <button class="num-btn" onclick="setFieldVal('d', 28)">28</button>
+            <button class="num-btn" onclick="setFieldVal('d', 30)">30</button>
           </div>
 
           <label>Snabbval Höjd (m)</label>
           <div class="num-pad">
+            <button class="num-btn" style="background:#eaf2f8;" onclick="setFieldVal('h', 8)">8</button>
             <button class="num-btn" style="background:#eaf2f8;" onclick="setFieldVal('h', 10)">10</button>
             <button class="num-btn" style="background:#eaf2f8;" onclick="setFieldVal('h', 12)">12</button>
             <button class="num-btn" style="background:#eaf2f8;" onclick="setFieldVal('h', 14)">14</button>
             <button class="num-btn" style="background:#eaf2f8;" onclick="setFieldVal('h', 16)">16</button>
+            <button class="num-btn half-btn" onclick="addHalfVal('h')">+.5</button>
+            
             <button class="num-btn" style="background:#eaf2f8;" onclick="setFieldVal('h', 18)">18</button>
             <button class="num-btn" style="background:#eaf2f8;" onclick="setFieldVal('h', 20)">20</button>
             <button class="num-btn" style="background:#eaf2f8;" onclick="setFieldVal('h', 22)">22</button>
@@ -570,15 +578,13 @@
       document.getElementById('logo-uploader').value = "";
     }
 
-    // NYHET: INTERAKTIV SATELLITKARTA INTEGRERAD
     function initMap() {
       const startPos = [62.6323, 17.9379];
       map = L.map('map').setView(startPos, 10);
       
-      // Laddar högupplöst satellitdata från Esri som standard för skoglig precision
       L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         maxZoom: 19,
-        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri'
       }).addTo(map);
 
       map.on('click', e => setCoordinates(e.latlng.lat, e.latlng.lng));
@@ -624,10 +630,38 @@
       document.getElementById(`s-btn-${sp}`).classList.add(cls);
     }
 
-    function setFieldVal(type, val) { document.getElementById(`field-${type}`).value = val; }
-    function addTreeRecord() { registeredTrees.push({ d: parseFloat(document.getElementById('field-d').value), h: parseFloat(document.getElementById('field-h').value), species: activeSpecies }); updateTreeListUI(); }
+    // INTERAKTIVA METODER FÖR DEN NYA DECIMALA NUMPADEN
+    function setFieldVal(type, val) { 
+      document.getElementById(`field-${type}`).value = val; 
+    }
+    
+    function addHalfVal(type) {
+      const input = document.getElementById(`field-${type}`);
+      let currentVal = parseFloat(input.value) || 0;
+      // Om värdet redan slutar på .5, runda ner till heltal, annars addera .5
+      if (currentVal % 1 !== 0) {
+        input.value = Math.floor(currentVal);
+      } else {
+        input.value = currentVal + 0.5;
+      }
+    }
+
+    function addTreeRecord() { 
+      registeredTrees.push({ 
+        d: parseFloat(document.getElementById('field-d').value), 
+        h: parseFloat(document.getElementById('field-h').value), 
+        species: activeSpecies 
+      }); 
+      updateTreeListUI(); 
+    }
+    
     function clearTreeRecords() { registeredTrees = []; updateTreeListUI(); }
-    function updateTreeListUI() { document.getElementById('tree-list-display').innerText = registeredTrees.length === 0 ? "Inga stammar registrerade." : registeredTrees.map(t => `[${t.species}] ${t.d}cm`).join(' | '); }
+    
+    function updateTreeListUI() { 
+      document.getElementById('tree-list-display').innerText = registeredTrees.length === 0 
+        ? "Inga stammar registrerade." 
+        : registeredTrees.map(t => `${t.species[0]}:${t.d}cm/${t.h}m`).join(' | '); 
+    }
 
     function calculateFieldMetrics() {
       if(registeredTrees.length === 0) return;
@@ -643,7 +677,12 @@
       document.getElementById('res-stem-ha').innerText = computedStemHa;
     }
 
-    function transferMetricsToGallring() { document.getElementById('gal-d').value = computedDgv.toFixed(1); document.getElementById('gal-hojd').value = computedHm.toFixed(1); runLivePrognosis(); switchTab('tab-gallring'); }
+    function transferMetricsToGallring() { 
+      document.getElementById('gal-d').value = computedDgv.toFixed(1); 
+      document.getElementById('gal-hojd').value = computedHm.toFixed(1); 
+      runLivePrognosis(); 
+      switchTab('tab-gallring'); 
+    }
 
     function runLivePrognosis() {
       const areal = parseFloat(document.getElementById('gal-areal').value) || 0;
@@ -788,7 +827,6 @@
         document.getElementById('p-signature-img').src = canvas.toDataURL(); document.getElementById('p-signature-img').style.display = 'block';
       }
       
-      // Kartbilaga för utskrift
       if (marker) {
         const c = marker.getLatLng();
         document.getElementById('print-map-container').innerHTML = `<img src="https://maps.geoapify.com/v1/staticmap?style=osm-carto&width=600&height=300&center=lonlat:${c.lng},${c.lat}&zoom=13&marker=lonlat:${c.lng},${c.lat};color:%23ff0000" style="width:100%; height:100%; object-fit:cover;">`;
