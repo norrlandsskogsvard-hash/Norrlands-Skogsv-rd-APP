@@ -94,7 +94,7 @@ function getGPS() {
                     alert("Tog för lång tid att hämta GPS. Försök igen.");
                     break;
                 default:
-                    alert("Ett internt GPS-fel uppstod vid fältetablering.");
+                    alert("Ett internt GPS-fel uppstod.");
                     break;
             }
         },
@@ -412,7 +412,7 @@ function clearSignature() {
     if(ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
-// --- SKOTTSÄKER GENERERING AV OFFERT ---
+// --- FULLSTÄNDIGT SÄKRAD GENERERING AV OFFERT ---
 function generateOffer() {
     if(cart.length === 0) {
         alert("Lägg till minst en åtgärd i din kalkyl innan du skapar en offert.");
@@ -442,8 +442,8 @@ function generateOffer() {
     const tbody = document.getElementById('p-tbody');
     
     tbody.innerHTML = cart.map(item => {
-        // HÄR RENSAS ALLA EVENTUELLA DOLDA MINUSTECKEN FRÅN KÄLLAN
-        const rawAmount = Math.abs(item.amount); 
+        // Tvinga absolut positivt tal DIREKT vid hämtning
+        const rawAmount = Math.abs(Number(item.amount)); 
         const isExpense = (item.type === 'Röjning' || item.type === 'Plantering');
         
         if(isExpense) {
@@ -452,6 +452,7 @@ function generateOffer() {
             nettoSum += rawAmount;
         }
         
+        // Skapa prefix strängt baserat på typ - ALDRIG från det matematiska talet
         const prefix = isExpense ? "-" : "+";
         const displayAmount = prefix + Math.round(rawAmount).toLocaleString('sv-SE') + " kr";
         
@@ -463,17 +464,22 @@ function generateOffer() {
         </tr>`;
     }).join('');
     
+    // Beräkna moms och slutsummor i rena variabler
+    const absoluteNetto = Math.abs(nettoSum);
     const moms = nettoSum * 0.25;
+    const absoluteMoms = Math.abs(moms);
     const totalInkl = nettoSum + moms;
+    const absoluteInkl = Math.abs(totalInkl);
     
+    // Sätt tecken manuellt för slutsektionen
     const nettoPrefix = nettoSum < 0 ? "-" : "";
     const momsPrefix = moms < 0 ? "-" : "";
     const inklPrefix = totalInkl < 0 ? "-" : "";
     
-    // HÄR ANVÄNDS MATH.ABS() ÄVEN PÅ SLUTSUMMORNA INNAN FORMATEING
-    document.getElementById('p-total-exkl').innerText = nettoPrefix + Math.round(Math.abs(nettoSum)).toLocaleString('sv-SE') + " kr";
-    document.getElementById('p-moms').innerText = momsPrefix + Math.round(Math.abs(moms)).toLocaleString('sv-SE') + " kr";
-    document.getElementById('p-total-inkl').innerText = inklPrefix + Math.round(Math.abs(totalInkl)).toLocaleString('sv-SE') + " kr";
+    // Injicera och formatera utan risk för dolda matematiska minustecken
+    document.getElementById('p-total-exkl').innerText = nettoPrefix + Math.round(absoluteNetto).toLocaleString('sv-SE') + " kr";
+    document.getElementById('p-moms').innerText = momsPrefix + Math.round(absoluteMoms).toLocaleString('sv-SE') + " kr";
+    document.getElementById('p-total-inkl').innerText = inklPrefix + Math.round(absoluteInkl).toLocaleString('sv-SE') + " kr";
     
     const notesDiv = document.getElementById('p-field-notes');
     if(fieldNotes.length > 0) {
