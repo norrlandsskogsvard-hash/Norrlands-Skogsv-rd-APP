@@ -320,11 +320,9 @@ function updateCartUI() {
         </div>`;
     }).join('');
     
-    if (total < 0) {
-        document.getElementById('cart-total').innerText = `Balans/Totalt exkl. moms: -${Math.round(Math.abs(total)).toLocaleString('sv-SE')} kr`;
-    } else {
-        document.getElementById('cart-total').innerText = `Balans/Totalt exkl. moms: ${Math.round(total).toLocaleString('sv-SE')} kr`;
-    }
+    // RÄTTAT HÄR: JavaScripts toLocaleString lägger till minustecken själv om total är negativt. 
+    // Vi lägger inte till något manuellt minus här för att slippa dubbla tecken.
+    document.getElementById('cart-total').innerText = `Balans/Totalt exkl. moms: ${Math.round(total).toLocaleString('sv-SE')} kr`;
 }
 
 function removeItem(idx) {
@@ -412,7 +410,7 @@ function clearSignature() {
     if(ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
-// --- SKOTTSÄKER GENERERING AV OFFERT ---
+// --- GENERERING AV OFFERT ---
 function generateOffer() {
     if(cart.length === 0) {
         alert("Lägg till minst en åtgärd i din kalkyl innan du skapar en offert.");
@@ -442,7 +440,6 @@ function generateOffer() {
     const tbody = document.getElementById('p-tbody');
     
     tbody.innerHTML = cart.map(item => {
-        // Garantera att vi arbetar med ett absolut positivt tal (inget dolt minustecken från systemet)
         const rawAmount = Math.abs(Number(item.amount)); 
         const isExpense = (item.type === 'Röjning' || item.type === 'Plantering');
         
@@ -452,7 +449,6 @@ function generateOffer() {
             nettoSum += rawAmount;
         }
         
-        // Konstruera strängen helt manuellt
         const prefix = isExpense ? "-" : "+";
         const displayAmount = prefix + Math.round(rawAmount).toLocaleString('sv-SE') + " kr";
         
@@ -464,20 +460,14 @@ function generateOffer() {
         </tr>`;
     }).join('');
     
-    // Separera teckenhanteringen från själva valutaformateringen
-    const absoluteNetto = Math.abs(nettoSum);
     const moms = nettoSum * 0.25;
-    const absoluteMoms = Math.abs(moms);
     const totalInkl = nettoSum + moms;
-    const absoluteInkl = Math.abs(totalInkl);
     
-    const nettoPrefix = nettoSum < 0 ? "-" : "";
-    const momsPrefix = moms < 0 ? "-" : "";
-    const inklPrefix = totalInkl < 0 ? "-" : "";
-    
-    document.getElementById('p-total-exkl').innerText = nettoPrefix + Math.round(absoluteNetto).toLocaleString('sv-SE') + " kr";
-    document.getElementById('p-moms').innerText = momsPrefix + Math.round(absoluteMoms).toLocaleString('sv-SE') + " kr";
-    document.getElementById('p-total-inkl').innerText = inklPrefix + Math.round(absoluteInkl).toLocaleString('sv-SE') + " kr";
+    // RÄTTAT HÄR: Vi låter toLocaleString helt själv sköta minustecknen för slutsummorna 
+    // så att vi slipper de felaktiga dubbla minustecknen i utskriftsvyn!
+    document.getElementById('p-total-exkl').innerText = Math.round(nettoSum).toLocaleString('sv-SE') + " kr";
+    document.getElementById('p-moms').innerText = Math.round(moms).toLocaleString('sv-SE') + " kr";
+    document.getElementById('p-total-inkl').innerText = Math.round(totalInkl).toLocaleString('sv-SE') + " kr";
     
     const notesDiv = document.getElementById('p-field-notes');
     if(fieldNotes.length > 0) {
