@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Skogskalkylator Pro Fält</title>
+<title>Skogskalkylator Pro Fält - GitHub Version</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2c3e50">
 <link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='100' fill='%232c3e50'/><path d='M256 80 L380 320 L310 320 L420 440 L92 440 L202 320 L132 320 Z' fill='%232ecc71'/><rect x='236' y='440' width='40' height='40' fill='%23d35400'/></svg>">
@@ -43,11 +43,11 @@ body {
 
 input, select, textarea { 
     width: 100%; 
-    padding: 12px; 
+    padding: 10px; 
     margin: 4px 0 12px 0; 
     box-sizing: border-box; 
     border: 2px solid var(--border-color); 
-    border-radius: 8px; 
+    border-radius: 6px; 
     font-size: 16px; 
     background-color: #fff; 
     color: #000; 
@@ -66,16 +66,16 @@ input:focus, select:focus, textarea:focus {
 }
 .tab-btn { 
     flex: 1; 
-    min-width: 75px; 
-    padding: 12px 4px; 
+    min-width: 65px; 
+    padding: 10px 4px; 
     background: #f8f9fa; 
     border: 1px solid var(--border-color); 
-    font-size: 12px; 
+    font-size: 11px; 
     font-weight: bold; 
     color: #7f8c8d; 
     cursor: pointer; 
     text-align: center; 
-    border-radius: 8px 8px 0 0; 
+    border-radius: 6px 6px 0 0; 
 }
 .tab-btn.active { 
     color: white; 
@@ -92,7 +92,7 @@ label { font-weight: bold; display: block; margin-top: 6px; color: #34495e; font
 .row { display: flex; gap: 8px; }
 .row div { flex: 1; }
 
-button { padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: bold; transition: background 0.2s; }
+button { padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold; transition: background 0.2s; }
 .btn-next { width: 48%; background-color: var(--accent-color); color: white; }
 .btn-undo { width: 48%; background-color: #7f8c8d; color: white; }
 .btn-calc-full { width: 100%; background-color: var(--secondary-color); color: white; margin-top: 5px; }
@@ -104,13 +104,13 @@ button { padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-
 .warning-box { margin-top: 8px; padding: 10px; background: #fef9e7; border-left: 4px solid var(--warning-color); color: #b7950b; font-size: 12px; border-radius: 4px; }
 .list { font-size: 13px; color: #555; margin-top: 10px; border-top: 1px solid #eee; padding-top: 8px; max-height: 100px; overflow-y: auto; }
 
-.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0; }
-.key-btn { background: #e2e8f0; color: #2d3748; padding: 16px; font-size: 20px; border-radius: 8px; border: none; cursor: pointer; text-align: center; user-select: none; }
+.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 10px 0; }
+.key-btn { background: #e2e8f0; color: #2d3748; padding: 14px; font-size: 18px; border-radius: 6px; border: none; cursor: pointer; text-align: center; user-select: none; }
 .key-btn:active { background: #cbd5e1; }
 
 .cart-badge { background: var(--danger-color); color: white; border-radius: 50%; padding: 2px 7px; font-size: 11px; margin-left: 5px; }
 .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; font-size: 13px; }
-.cart-item button { padding: 4px 8px; font-size: 11px; background: var(--danger-color); color: white; border-radius: 4px; }
+.cart-item button { padding: 2px 6px; font-size: 11px; background: var(--danger-color); color: white; }
 
 .signature-container { border: 2px dashed var(--border-color); background: #fff; margin-top: 10px; position: relative; border-radius: 6px; }
 .sig-canvas { display: block; width: 100%; height: 130px; background: #fff; cursor: crosshair; touch-action: none; }
@@ -470,19 +470,12 @@ function getGallringData() {
     const gy = parseFloat(document.getElementById('gallring-gy').value);
     const hojd = parseFloat(document.getElementById('gallring-hojd').value);
     const uttagPct = parseFloat(document.getElementById('gallring-uttag').value);
-    const gTradslag = document.getElementById('gallring-tradslag').value;
     if(isNaN(ha)||isNaN(gy)||isNaN(hojd)||isNaN(uttagPct)) return null;
 
     const virkespris = parseFloat(localStorage.getItem('pr_gallring_pris'));
     const drivningskostnad = parseFloat(localStorage.getItem('pr_gallring_drivning'));
 
-    // Trädslagsspecifik formfaktor för bättre precision ute i fält
-    let formFaktor = 0.45;
-    if(gTradslag === 'tall') formFaktor = 0.46;
-    if(gTradslag === 'gran') formFaktor = 0.48;
-    if(gTradslag === 'bjork') formFaktor = 0.42;
-
-    let volymPerHa = gy * hojd * formFaktor; 
+    let volymPerHa = gy * hojd * 0.45; 
     let totalVolym = volymPerHa * ha;
     let gallradVolym = totalVolym * (uttagPct / 100);
     
@@ -499,7 +492,7 @@ function getGallringData() {
 
     return {
         type: 'Gallring',
-        spec: `Beståndsgallring (${gTradslag}) baserad på h_m. Uttag: ${uttagPct}%. Estimerat uttag: ${Math.round(gallradVolym)} m³sk.`,
+        spec: `Beståndsgallring baserad på h_m. Uttag: ${uttagPct}%. Estimerat uttag: ${Math.round(gallradVolym)} m³sk.`,
         vol: `${ha} ha`,
         unitPr: Math.round(nettoExkl / ha),
         exkl: nettoExkl, 
@@ -557,7 +550,7 @@ function calculatePlan() {
     document.getElementById('plan-result-output').innerHTML = `Kostnad exkl: ${Math.round(data.exkl).toLocaleString()} kr`;
 }
 
-// --- VARUKORGSSYSTEM MED LOCALSTORAGE ---
+// --- VARUKORGSSYSTEM ---
 function addToCart(type) {
     let itemData = null;
     if(type === 'roj') itemData = getRojningData();
@@ -716,7 +709,7 @@ function buildFinalQuote() {
         termsText += "• Fastighetsägaren ansvarar för att tillse att fastighetsgränser och arbetsområden är tillräckligt markerade i fält innan arbetets start.<br>";
     }
     if (harGallring) {
-        termsText += "• Volymberäkningar är uppskattningar grundade på fältstickprov. Slutlig inmätning sker vid industri/mottagande vält.<br>";
+        termsText += "• Volymberäkningar är uppskattningar grundade på aritmetiskt fältstickprov (h_m). Slutlig inmätning sker vid industri/mottagande vält.<br>";
     }
     if (harPlan) {
         termsText += "• Vid upprättande av skogsbruksplan förbinder sig kunden att tillhandahålla eventuellt äldre kartmaterial.<br>";
@@ -727,17 +720,14 @@ function buildFinalQuote() {
     const mapLnk = document.getElementById('quote-map-link').value;
     if(mapLnk) {
         document.getElementById('q-map').style.display = "block";
-        document.getElementById('q-map').innerHTML = `<strong>Geografiskt underlag:</strong><br><a href="${mapLnk}" target="_blank" style="color:#2980b9; word-break:break-all;">${mapLnk}</a>`;
+        document.getElementById('q-map').innerHTML = `<strong>Geografiskt underlag (Lantmäteriet):</strong><br><a href="${mapLnk}" target="_blank" style="color:#2980b9; word-break:break-all;">${mapLnk}</a>`;
     } else { 
         document.getElementById('q-map').style.display = "none"; 
     }
 
     document.getElementById('sig-entreprenor-meta').innerText = `${inmatadOrt}, ${inmatatDatum}`;
     document.getElementById('sig-kund-meta').innerText = `${inmatadOrt}, ___________`;
-    
-    if(canvas) {
-        document.getElementById('print-sig').src = canvas.toDataURL();
-    }
+    document.getElementById('print-sig').src = canvas.toDataURL();
 
     document.querySelector('.card').style.display = 'none';
     document.getElementById('quote-printout').style.display = 'block';
@@ -771,7 +761,7 @@ function backToApp() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// --- RELASKOP & PROVYTA ---
+// --- RELASKOP ---
 let relCount = 0;
 function countRel(val) {
     relCount = Math.max(0, relCount + val);
@@ -786,28 +776,6 @@ function sendRelToGallring() {
     saveSettings();
     alert("Grundyta överförd till gallringsfliken!");
 }
-
-let plotTrees = 0;
-function changePlotTrees(val) {
-    plotTrees = Math.max(0, plotTrees + val);
-    document.getElementById('plot-val').innerText = plotTrees;
-    calculatePlotStems();
-}
-function calculatePlotStems() {
-    let radius = parseFloat(document.getElementById('plot-radius').value);
-    let area = Math.PI * Math.pow(radius, 2);
-    let stemsPerHa = Math.round(plotTrees * (10000 / area));
-    document.getElementById('plot-calc-res').innerText = `Estimerat: ${stemsPerHa} stammar/ha`;
-}
-function sendStemsToRojning() {
-    let radius = parseFloat(document.getElementById('plot-radius').value);
-    let area = Math.PI * Math.pow(radius, 2);
-    let stemsPerHa = Math.round(plotTrees * (10000 / area));
-    document.getElementById('roj-stammar').value = stemsPerHa;
-    saveSettings();
-    alert("Stamantal överfört till röjningsfliken!");
-}
-function resetPlot() { plotTrees = 0; document.getElementById('plot-val').innerText = "0"; document.getElementById('plot-calc-res').innerText = "Estimerat: 0 stammar/ha"; }
 </script>
 </head>
 <body>
@@ -835,7 +803,7 @@ function resetPlot() { plotTrees = 0; document.getElementById('plot-val').innerT
             <div><label>Kontakt (Tel/E-post):</label><input type="text" id="quote-kontakt" placeholder="Kontaktuppgifter" onchange="saveSettings()"></div>
             <div><label>Avstånd till objekt (mil):</label><input type="number" id="quote-mil" placeholder="Antal mil" min="0" onchange="saveSettings()"></div>
         </div>
-        <label>Kartlänk från Lantmäteriet:</label>
+        <label>Kartlänk från Lantmäteriet (Min Karta):</label>
         <input type="url" id="quote-map-link" placeholder="Klistra in länk" onchange="saveSettings()">
         <label>Skapa dokument som:</label>
         <select id="doc-type" onchange="saveSettings()">
@@ -952,17 +920,16 @@ function resetPlot() { plotTrees = 0; document.getElementById('plot-val').innerT
     </div>
 
     <div id="gallring-tab" class="tab-content">
-        <h2>Gallringsanalys</h2>
+        <h2>Gallringsanalys (Anpassad efter h<sub>m</sub>)</h2>
         <div class="row">
             <div><label>Areal (ha):</label><input type="number" id="gallring-hektar" value="2.5" step="0.1" onchange="saveSettings()"></div>
-            <div><label>Huvudträdslag:</label><select id="gallring-tradslag" onchange="saveSettings()"><option value="tall">Tall</option><option value="gran">Gran</option><option value="bjork">Björk</option></select></div>
-        </div>
-        <div class="row">
             <div><label>Grundyta (m²/ha):</label><input type="number" id="gallring-gy" value="24" onchange="saveSettings()"></div>
-            <div><label>Medelhöjd h<sub>m</sub> (m):</label><input type="number" id="gallring-hojd" value="15" step="0.5" onchange="saveSettings()"></div>
         </div>
         <div class="row">
+            <div><label>Medelhöjd h<sub>m</sub> (m):</label><input type="number" id="gallring-hojd" value="15" step="0.5" onchange="saveSettings()"></div>
             <div><label>Medeldiameter dgv (cm):</label><input type="number" id="gallring-diam" value="16" step="0.5" onchange="saveSettings()"></div>
+        </div>
+        <div class="row">
             <div><label>Planerat uttag (%):</label><input type="number" id="gallring-uttag" value="30" onchange="saveSettings()"></div>
         </div>
         <label>Särskilda noteringar (Gallring):</label>
@@ -990,37 +957,18 @@ function resetPlot() { plotTrees = 0; document.getElementById('plot-val').innerT
     </div>
 
     <div id="field-tab" class="tab-content">
-        <h2>Fältverktyg & Skogsmatning</h2>
-        
-        <div style="background: #edf2f7; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px;">
-            <h3 style="margin-top:0; font-size:14px; color:var(--primary-color);">🎯 Digitalt Relaskop</h3>
+        <h2>Digitalt Relaskop</h2>
+        <div style="text-align: center; background: #edf2f7; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 10px;">
             <label>Relaskopfaktor:</label>
             <select id="rel-faktor" style="margin-bottom:5px;"><option value="1">1.0 (Standard)</option><option value="2">2.0</option><option value="0.5">0.5</option></select>
-            <div style="font-size: 42px; font-weight: bold; color: #2d3748; text-align:center; margin: 10px 0;" id="rel-val">0</div>
+            <div style="font-size: 42px; font-weight: bold; color: #2d3748; margin: 10px 0;" id="rel-val">0</div>
             <div class="row">
                 <button type="button" style="background:var(--danger-color); color:white; font-size:20px; width:100%; padding:10px;" onclick="countRel(-1)">-1</button>
                 <button type="button" style="background:var(--secondary-color); color:white; font-size:20px; width:100%; padding:10px;" onclick="countRel(1)">+1 Träd</button>
             </div>
-            <div id="rel-calc-res" style="margin-top:12px; font-weight:bold; color:var(--primary-color); text-align:center;">Uppmätt Grundyta: 0 m²/ha</div>
+            <div id="rel-calc-res" style="margin-top:12px; font-weight:bold; color:var(--primary-color);">Uppmätt Grundyta: 0 m²/ha</div>
             <button type="button" class="btn-calc-full" style="background-color:var(--accent-color);" onclick="sendRelToGallring()">Skicka Grundyta till Gallring</button>
-            <button type="button" class="btn-reset" style="margin-top:5px; padding:4px;" onclick="resetRel()">Nollställ Relaskop</button>
-        </div>
-
-        <div style="background: #eef2f7; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
-            <h3 style="margin-top:0; font-size:14px; color:var(--primary-color);">📊 Stamräkning (Provyta)</h3>
-            <label>Ytradie (m):</label>
-            <select id="plot-radius" onchange="calculatePlotStems()">
-                <option value="5.64">5.64 m (100 m²-yta / Faktor 100)</option>
-                <option value="3.99">3.99 m (50 m²-yta / Faktor 200)</option>
-            </select>
-            <div style="font-size: 42px; font-weight: bold; color: #2d3748; text-align:center; margin: 10px 0;" id="plot-val">0</div>
-            <div class="row">
-                <button type="button" style="background:var(--danger-color); color:white; font-size:20px; width:100%; padding:10px;" onclick="changePlotTrees(-1)">-1</button>
-                <button type="button" style="background:var(--secondary-color); color:white; font-size:20px; width:100%; padding:10px;" onclick="changePlotTrees(1)">+1 Stam</button>
-            </div>
-            <div id="plot-calc-res" style="margin-top:12px; font-weight:bold; color:var(--primary-color); text-align:center;">Estimerat: 0 stammar/ha</div>
-            <button type="button" class="btn-calc-full" style="background-color:var(--accent-color);" onclick="sendStemsToRojning()">Skicka Stamantal till Röjning</button>
-            <button type="button" class="btn-reset" style="margin-top:5px; padding:4px;" onclick="resetPlot()">Nollställ Provyta</button>
+            <button type="button" class="btn-reset" style="margin-top:5px; padding:4px;" onclick="resetRel()">Nollställ</button>
         </div>
     </div>
 
@@ -1074,7 +1022,6 @@ function resetPlot() { plotTrees = 0; document.getElementById('plot-val').innerT
         </div>
     </fieldset>
 </div>
-
 
 <div id="quote-printout">
     <div class="no-print" style="margin-bottom:15px; display:flex; gap:10px;">
