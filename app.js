@@ -130,7 +130,7 @@ function initMap() {
         const lng = e.latlng.lng;
         
         const gpsInput = document.getElementById('kund-gps');
-        const swerefInput = document.getElementById('kund-sweref');
+        const swerefInput = document.getElementById('sweref');
         
         if (gpsInput) gpsInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
         const sweref = convertToSweref99TM(lat, lng);
@@ -374,7 +374,6 @@ function updateCartUI() {
     
     let displayText = "";
     if (calcMode === "kostnad") {
-        // I kostnadsläge summerar vi bara kostnaderna (röjning & plantering)
         let costTotal = 0;
         cart.forEach(item => {
             if(item.type === 'Röjning' || item.type === 'Plantering') {
@@ -421,7 +420,7 @@ function handleLogoUpload(input) {
             try {
                 localStorage.setItem('fieldpro_user_logo', savedLogoDataUrl);
             } catch(error) {
-                console.warn("Kunde inte spara logotyp lokalt (LocalStorage fullt):", error);
+                console.warn("Kunde inte spara logotyp lokalt:", error);
             }
             showLogoPreview();
         };
@@ -537,10 +536,8 @@ function generateOffer() {
     let totalSum = 0;
     const tbody = document.getElementById('p-tbody');
     
-    // Filtrera rader och bygg tabellen beroende på valt presentationsläge
     const filteredCart = cart.filter(item => {
         if (calcMode === "kostnad") {
-            // I kostnadsläge visar vi enbart utgifter
             return (item.type === 'Röjning' || item.type === 'Plantering');
         }
         return true;
@@ -556,7 +553,6 @@ function generateOffer() {
             if (isExpense) totalSum -= rawAmount;
             else totalSum += rawAmount;
         } else {
-            // I rent kostnadsläge plussar vi ihop utgifterna till ett positivt totalbelopp
             totalSum += rawAmount;
         }
         
@@ -572,18 +568,18 @@ function generateOffer() {
     
     if (tbody) tbody.innerHTML = rowsHtml;
     
-    // Justera texter dynamiskt baserat på valt presentationsläge
+    // Dynamisk ändring av etiketterna beroende på kalkylsätt
     if (calcMode === "kostnad") {
         safelySetText('p-label-exkl', "Total kostnad exkl. moms:");
         safelySetText('p-label-inkl', "Totalt att betala (inkl. moms):");
     } else {
         if (totalSum >= 0) {
             safelySetText('p-label-exkl', "Slutbalans exkl. moms (Netto överskott):");
-            safelySetText('p-label-inkl', "Totalt att erhålla:");
+            safelySetText('p-label-inkl', "Totalt att erhålla (inkl. moms):");
         } else {
             safelySetText('p-label-exkl', "Slutbalans exkl. moms (Underskott):");
-            safelySetText('p-label-inkl', "Totalt att betala:");
-            totalSum = Math.abs(totalSum); // Gör positiv för snyggare presentation av underskott
+            safelySetText('p-label-inkl', "Totalt att betala (inkl. moms):");
+            totalSum = Math.abs(totalSum); 
         }
     }
 
