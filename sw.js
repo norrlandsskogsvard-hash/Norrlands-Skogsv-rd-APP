@@ -1,25 +1,27 @@
-const CACHE_NAME = 'skogskalkylator-v7.0-github';
+const CACHE_NAME = 'skogskalkyl-v2';
 const ASSETS = [
   './',
   './index.html',
-  './manifest.json'
+  './manifest.json',
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
 ];
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
+self.addEventListener('install', (e) => {
+  e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS);
     }).then(() => self.skipWaiting())
   );
 });
 
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys().then((keys) => {
       return Promise.all(
-        cacheNames.map((cache) => {
-          if (cache !== CACHE_NAME) {
-            return caches.delete(cache);
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
           }
         })
       );
@@ -27,20 +29,18 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        if (response && response.status === 200 && response.type === 'basic') {
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-        }
-        return response;
+self.addEventListener('fetch', (e) => {
+  if (e.request.url.startsWith('http')) {
+    e.respondWith(
+      fetch(e.request).catch(() => {
+        return caches.match(e.request);
       })
-      .catch(() => {
-        return caches.match(event.request);
+    );
+  } else {
+    e.respondWith(
+      caches.match(e.request).then((cachedResponse) => {
+        return cachedResponse || fetch(e.request);
       })
-  );
+    );
+  }
 });
