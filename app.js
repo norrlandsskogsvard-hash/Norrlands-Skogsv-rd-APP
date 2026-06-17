@@ -1,593 +1,659 @@
-<!DOCTYPE html>
-<html lang="sv">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Norrlands Skogsvård - Fält Pro Enterprise v11</title>
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#1e3f20">
-  
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+// --- Globala tillståndsvariabler ---
+let cart = [];
+let map, marker;
+let registeredTrees = [];
+let fieldNotes = [];
+let activeSpecies = 'Tall';
+let computedDgv = 18;
+let computedHm = 16;
+let computedStemHa = 0;
+let savedLogoDataUrl = ""; 
 
-  <style>
-    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { margin: 0; background-color: #f4f6f4; color: #333; padding-bottom: 60px; }
-    
-    header { background-color: #1e3f20; color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 1.2rem; }
-    .nav-tabs { display: flex; overflow-x: auto; background: #2e5a32; white-space: nowrap; -webkit-overflow-scrolling: touch; }
-    .nav-tabs button { background: none; border: none; color: #bcd4be; padding: 12px 15px; font-size: 0.95rem; cursor: pointer; border-bottom: 3px solid transparent; flex: 0 0 auto; }
-    .nav-tabs button.active { color: white; border-bottom: 3px solid #85e389; font-weight: bold; }
-    
-    .container { padding: 15px; max-width: 850px; margin: 0 auto; }
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-    .card { background: white; padding: 15px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-    h2 { margin-top: 0; color: #1e3f20; font-size: 1.15rem; border-left: 4px solid #2e5a32; padding-left: 8px; }
-    
-    .form-group { margin-bottom: 12px; }
-    label { display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 4px; color: #555; }
-    input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; background: #fafafa; }
-    input:focus, select:focus { border-color: #2e5a32; outline: none; }
-    
-    .btn { background-color: #2e5a32; color: white; border: none; padding: 12px 15px; width: 100%; border-radius: 4px; font-size: 1rem; font-weight: bold; cursor: pointer; margin-top: 5px; }
-    .btn:hover { background-color: #1e3f20; }
-    .btn-secondary { background-color: #666; }
-    .btn-cart { background-color: #e67e22; }
-    .btn-cart:hover { background-color: #d35400; }
-    .btn-danger { background-color: #c0392b; }
-    .btn-action { background-color: #3498db; }
-    .btn-success { background-color: #27ae60; }
-    
-    .grid-2 { display: flex; gap: 10px; }
-    .grid-2 > div { flex: 1; }
-    
-    #map { height: 380px; width: 100%; border-radius: 8px; margin-bottom: 10px; z-index: 1; }
-    .sig-canvas { border: 1px dashed #999; background: #fdfdfd; width: 100%; height: 140px; border-radius: 4px; display: block; }
-    .cart-item { background: #f9f9f9; padding: 10px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
-    
-    .num-pad { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 10px; }
-    .num-btn { background: #e8efe9; border: 1px solid #bdcbd0; padding: 12px 2px; font-size: 0.95rem; font-weight: bold; border-radius: 6px; cursor: pointer; text-align: center; }
-    .num-btn:active { background: #cbdccf; }
-    .num-btn.half-btn { background: #d5dbdb; border-color: #7f8c8d; color: #2c3e50; }
-    .num-btn.half-btn:active { background: #bdc3c7; }
-    .data-list { max-height: 160px; overflow-y: auto; background: #eee; padding: 8px; border-radius: 4px; font-size: 0.85rem; font-family: monospace; }
-    
-    .species-selector { display: flex; gap: 10px; margin-bottom: 12px; }
-    .species-btn { flex: 1; padding: 10px; border: 2px solid #ccc; border-radius: 6px; font-weight: bold; cursor: pointer; text-align: center; background: #f9f9f9; }
-    .species-btn.active-tall { background: #e67e22; color: white; border-color: #d35400; }
-    .species-btn.active-gran { background: #27ae60; color: white; border-color: #219653; }
-    .species-btn.active-lov { background: #f1c40f; color: black; border-color: #f39c12; }
+const priceLists = {
+    SCA: { timmer: 690, massa: 425 },
+    Norra: { timmer: 710, massa: 440 },
+    Sveaskog: { timmer: 680, massa: 415 },
+    Mellanskog: { timmer: 740, massa: 460 }
+};
 
-    .alert-box { background: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 10px; border-radius: 4px; margin-top: 10px; font-size: 0.9rem; font-weight: bold; display: none; }
-    .logo-preview-box { max-width: 120px; max-height: 200px; object-fit: contain; margin-top: 10px; border: 1px solid #ccc; border-radius: 4px; padding: 5px; display: none; background: white; }
-    .history-item { border-bottom: 1px solid #ddd; padding: 10px 0; display: flex; justify-content: space-between; align-items: center; }
+// --- Canvas (Signatur) Variabler ---
+let canvas, ctx, isDrawing = false;
 
-    /* Snyggare och renare Offertlayout */
-    #print-view { display: none; background: white; padding: 40px; color: #111; font-size: 10.5pt; line-height: 1.6; max-width: 900px; margin: 0 auto; box-shadow: 0 0 20px rgba(0,0,0,0.05); border-radius: 8px; }
-    .print-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 35px; border-bottom: 3px solid #1e3f20; padding-bottom: 20px; }
-    .print-meta-box { text-align: right; font-size: 10pt; color: #444; }
-    .print-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 25px; }
-    .print-section-title { font-size: 12pt; color: white; background: #1e3f20; padding: 6px 12px; margin-top: 25px; margin-bottom: 15px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; border-radius: 4px; }
+document.addEventListener('DOMContentLoaded', () => {
+    const dateInput = document.getElementById('kund-datum');
+    if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
     
-    .print-table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; }
-    .print-table th { background-color: #f5f8f5 !important; color: #1e3f20; font-weight: bold; border-bottom: 2px solid #1e3f20; padding: 12px 10px; font-size: 10pt; text-align: left; }
-    .print-table td { border-bottom: 1px solid #e5eee5; padding: 12px 10px; font-size: 10pt; vertical-align: top; }
-    .print-table tr:nth-child(even) { background-color: #fafdfa; }
+    initMap();
+    initSignaturePad();
+    loadSavedLogo();
+    loadHistory();
+    runLivePrognosis();
     
-    .print-totals-wrapper { display: flex; justify-content: flex-end; margin-top: 15px; margin-bottom: 30px; }
-    .print-totals { width: 360px; background: #f9fbf9; padding: 15px; border-radius: 6px; border: 1px solid #d5ebd5; }
-    .print-totals-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 10pt; color: #444; }
-    .print-totals-row.grand-total { border-top: 2px dashed #1e3f20; font-size: 13pt; font-weight: bold; color: #1e3f20; padding-top: 10px; margin-top: 5px; }
-    
-    .print-signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; margin-top: 60px; page-break-inside: avoid; }
-    .signature-container { background: #fdfdfd; border: 1px solid #eee; padding: 20px; border-radius: 6px; min-height: 140px; position: relative; }
-    .signature-line { border-top: 1px solid #777; padding-top: 8px; font-size: 9.5pt; margin-top: 45px; color: #333; }
-    .print-logo-placeholder { width: 65px; height: 65px; background: #1e3f20; color: white; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 1.6rem; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-
-    @media print {
-      body { background: white; padding-bottom: 0; }
-      .no-print { display: none !important; }
-      #print-view { display: block !important; box-shadow: none; padding: 0; margin: 0; max-width: 100%; }
-      .page-break { page-break-before: always; }
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch(err => console.log("SW Error", err));
     }
-  </style>
-</head>
-<body>
+});
 
-  <div class="no-print">
-    <header>🌲 Norrlands Skogsvård - Fält Pro</header>
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
     
-    <div class="nav-tabs" id="navTabs">
-      <button onclick="switchTab('tab-kund')" class="active">📍 Kund & Karta</button>
-      <button onclick="switchTab('tab-matning')">📊 Fältmätning</button>
-      <button onclick="switchTab('tab-rojning')">Röjning</button>
-      <button onclick="switchTab('tab-gallring')">Gallring</button>
-      <button onclick="switchTab('tab-plantering')">Plantering</button>
-      <button onclick="switchTab('tab-priser')">⚙️ Priser & Skogsbolag</button>
-      <button onclick="switchTab('tab-kalkyl')">🛒 Kalkyl (<span id="cart-count">0</span>)</button>
-    </div>
+    const targetTab = document.getElementById(tabId);
+    if (targetTab) targetTab.classList.add('active');
+    
+    if(window.event && window.event.currentTarget && window.event.currentTarget.tagName === 'BUTTON') {
+        window.event.currentTarget.classList.add('active');
+    }
+    if(tabId === 'tab-kund' && map) {
+        setTimeout(() => map.invalidateSize(), 200);
+    }
+}
 
-    <div class="container">
-      
-      <div id="tab-kund" class="tab-content active">
-        <div class="card">
-          <h2>Objekt- och Kundinformation</h2>
-          <div class="grid-2">
-            <div class="form-group">
-              <label>Kundens Namn</label>
-              <input type="text" id="kund-namn" placeholder="Fullständigt namn">
-            </div>
-            <div class="form-group">
-              <label>Org.nr / Personnummer</label>
-              <input type="text" id="kund-id" placeholder="ÅÅMMDD-XXXX / Org.nr">
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Fastighetsbeteckning</label>
-            <input type="text" id="kund-fastighet" placeholder="T.ex. Antnäs 1:4 eller fyll i manuellt...">
-          </div>
-          <div class="grid-2">
-            <div class="form-group">
-              <label>Ort / Kommun</label>
-              <input type="text" id="kund-ort" value="Sundsvall">
-            </div>
-            <div class="form-group">
-              <label>Datum</label>
-              <input type="date" id="kund-datum">
-            </div>
-          </div>
-          <div class="grid-2">
-            <div class="form-group">
-              <label>GPS-Koordinater (WGS84)</label>
-              <input type="text" id="kund-gps" placeholder="Lat, Lon">
-            </div>
-            <div class="form-group">
-              <label>Skoglig Standard (SWEREF 99 TM)</label>
-              <input type="text" id="kund-sweref" placeholder="N, E" readonly style="background:#eef2ee;">
-            </div>
-          </div>
-          <button class="btn btn-success" onclick="getGPS()">🛰️ Hämta GPS-Position från Fält</button>
-          
-          <div class="form-group" style="margin-top:10px;">
-            <label>Dokumenttyp</label>
-            <select id="doc-type">
-              <option value="Prisoffert">Prisoffert</option>
-              <option value="Beställningskontrakt">Beställningskontrakt (Bindande avtal)</option>
-            </select>
-          </div>
-        </div>
+function safelySetText(id, value) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.innerText = value;
+    }
+}
 
-        <div class="card">
-          <h2>Fältkarta & Avvikelsepunkter</h2>
-          <div id="map"></div>
-          
-          <div style="background:#f9f9f9; padding:10px; border-radius:6px; border:1px solid #ddd; margin-top:10px;">
-            <label>➕ Lägg till maskinförarinstruktion vid markerad punkt:</label>
-            <div class="grid-2" style="margin-top:5px;">
-              <select id="note-type">
-                <option value="Miljöhänsyn / Naturvärde">Miljöhänsyn / Naturvärde (Bäck/Traded)</option>
-                <option value="Otydlig Rågång">Otydlig Rågång (Måste snitslas)</option>
-                <option value="Vindfällen">Vindfällen (Tas med i uttag)</option>
-                <option value="Körskaderisk / Surhål">Körskaderisk / Surhål</option>
-              </select>
-              <button class="btn btn-action" style="margin-top:0;" onclick="addFieldNote()">Spara Punkt</button>
-            </div>
-            <div id="saved-notes-display" style="margin-top:10px; font-size:0.85rem; color:#444; max-height:80px; overflow-y:auto;">Inga avvikelsepunkter sparade.</div>
-          </div>
-        </div>
+// --- GPS-FUNKTION ---
+function getGPS() {
+    const gpsInput = document.getElementById('kund-gps');
+    const swerefInput = document.getElementById('kund-sweref');
+    const fastighetInput = document.getElementById('kund-fastighet');
+    
+    if (!navigator.geolocation) {
+        alert("Geolocation stöds inte av din webbläsare eller enhet.");
+        return;
+    }
 
-        <div class="card">
-          <h2>📁 Sparade Kontrakt & Avtal på Enheten</h2>
-          <div id="history-list-container" style="font-size:0.9rem;">Inga historiska kontrakt sparade lokalt.</div>
-        </div>
-      </div>
+    if (fastighetInput) fastighetInput.value = "Hämtar position från satellit...";
 
-      <div id="tab-matning" class="tab-content">
-        <div class="card">
-          <h2>Beräkningshjälp: Smart Provyta</h2>
-          <div class="form-group">
-            <label>Provytans Radie / Storlek</label>
-            <select id="field-radius" onchange="clearTreeRecords()">
-              <option value="5.64">5.64 m (Yta: 100 m² - Faktor: x100)</option>
-              <option value="6.18">6.18 m (Yta: 120 m² - Faktor: x83.3)</option>
-              <option value="7.98">7.98 m (Yta: 200 m² - Faktor: x50)</option>
-            </select>
-          </div>
+    const options = {
+        enableHighAccuracy: true,
+        timeout: 12000,
+        maximumAge: 0
+    };
 
-          <label>Välj Aktivt Trädslag:</label>
-          <div class="species-selector">
-            <div id="s-btn-Tall" class="species-btn active-tall" onclick="setActiveSpecies('Tall')">Tall</div>
-            <div id="s-btn-Gran" class="species-btn" onclick="setActiveSpecies('Gran')">Gran</div>
-            <div id="s-btn-Lov" class="species-btn" onclick="setActiveSpecies('Lov')">Löv</div>
-          </div>
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            
+            if (gpsInput) gpsInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+            
+            const sweref = convertToSweref99TM(lat, lng);
+            if (swerefInput) swerefInput.value = `N: ${sweref.N}, E: ${sweref.E}`;
+            
+            if (map) {
+                map.setView([lat, lng], 16);
+                if (marker) {
+                    marker.setLatLng([lat, lng]);
+                } else {
+                    marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+                }
+                if (fastighetInput && fastighetInput.value.includes("Hämtar")) {
+                    fastighetInput.value = "Position lokaliserad. Ange fastighetsbeteckning.";
+                }
+            }
+        },
+        (error) => {
+            console.error(error);
+            if (fastighetInput) fastighetInput.value = "";
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    alert("Du måste godkänna platstjänster i webbläsaren för att spåra skiftet.");
+                    break;
+                case error.TIMEOUT:
+                    alert("Tog för lång tid att hämta GPS. Försök igen eller stå utomhus.");
+                    break;
+                default:
+                    alert("Ett internt GPS-fel uppstod vid fältetablering.");
+                    break;
+            }
+        },
+        options
+    );
+}
 
-          <div class="grid-2">
-            <div class="form-group">
-              <label>Vald Diameter (cm)</label>
-              <input type="number" id="field-d" value="16" step="0.1">
-            </div>
-            <div class="form-group">
-              <label>Vald Höjd (m)</label>
-              <input type="number" id="field-h" value="14" step="0.1">
-            </div>
-          </div>
+function initMap() {
+    const mapEl = document.getElementById('map');
+    if (!mapEl) return;
+    
+    map = L.map('map').setView([62.6, 16.5], 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
 
-          <label>Snabbval Diameter (cm)</label>
-          <div class="num-pad">
-            <button class="num-btn" onclick="setFieldVal('d', 10)">10</button>
-            <button class="num-btn" onclick="setFieldVal('d', 12)">12</button>
-            <button class="num-btn" onclick="setFieldVal('d', 14)">14</button>
-            <button class="num-btn" onclick="setFieldVal('d', 16)">16</button>
-            <button class="num-btn" onclick="setFieldVal('d', 18)">18</button>
-            <button class="num-btn half-btn" onclick="addHalfVal('d')">+.5</button>
-            <button class="num-btn" onclick="setFieldVal('d', 20)">20</button>
-            <button class="num-btn" onclick="setFieldVal('d', 22)">22</button>
-            <button class="num-btn" onclick="setFieldVal('d', 24)">24</button>
-            <button class="num-btn" onclick="setFieldVal('d', 26)">26</button>
-            <button class="num-btn" onclick="setFieldVal('d', 28)">28</button>
-            <button class="num-btn" onclick="setFieldVal('d', 30)">30</button>
-          </div>
-
-          <label>Snabbval Höjd (m)</label>
-          <div class="num-pad">
-            <button class="num-btn" style="background:#eaf2f8;" onclick="setFieldVal('h', 8)">8</button>
-            <button class="num-btn" style="background:#eaf2f8;" onclick="setFieldVal('h', 10)">10</button>
-            <button class="num-btn" style="background:#eaf2f8;" onclick="setFieldVal('h', 12)">12</button>
-            <button class="num-btn" style="background:#eaf2f8;" onclick="setFieldVal('h', 14)">14</button>
-            <button class="num-btn" style="background:#eaf2f8;" onclick="setFieldVal('h', 16)">16</button>
-            <button class="num-btn half-btn" onclick="addHalfVal('h')">+.5</button>
-            <button class="num-btn" style="background:#eaf2f8;" onclick="setFieldVal('h', 18)">18</button>
-            <button class="num-btn" style="background:#eaf2f8;" onclick="setFieldVal('h', 20)">20</button>
-            <button class="num-btn" style="background:#eaf2f8;" onclick="setFieldVal('h', 22)">22</button>
-            <button class="num-btn" style="background:#eaf2f8;" onclick="setFieldVal('h', 24)">24</button>
-            <button class="num-btn" style="background:#eaf2f8;" onclick="setFieldVal('h', 26)">26</button>
-            <button class="num-btn" style="background:#eaf2f8;" onclick="setFieldVal('h', 28)">28</button>
-          </div>
-
-          <div class="grid-2" style="margin-top:15px;">
-            <button class="btn btn-action" onclick="addTreeRecord()">🌲 Registrera Stam</button>
-            <button class="btn btn-danger" onclick="clearTreeRecords()">Rensa data</button>
-          </div>
-
-          <div style="margin-top:15px;">
-            <div id="tree-list-display" class="data-list">Inga stammar registrerade än.</div>
-          </div>
-
-          <hr style="border:0; border-top:1px solid #ddd; margin:15px 0;">
-          <button class="btn" onclick="calculateFieldMetrics()">🧮 Beräkna Provyta</button>
-
-          <div style="margin-top:15px; background:#f9f9f9; padding:12px; border-radius:6px; border:1px solid #ddd;">
-            <p style="margin:4px 0;"><strong>Grundytevägd medeldiameter (dgv):</strong> <span id="res-dgv">0.0</span> cm</p>
-            <p style="margin:4px 0;"><strong>Aritmetisk medelhöjd (hm):</strong> <span id="res-hm">0.0</span> m</p>
-            <p style="margin:4px 0;"><strong>Beräknat stamantal:</strong> <span id="res-stem-ha">0</span> st/ha</p>
-          </div>
-
-          <button class="btn btn-cart" style="background-color:#2e5a32; margin-top:12px;" onclick="transferMetricsToGallring()">➡️ För över till Gallring</button>
-        </div>
-      </div>
-
-      <div id="tab-rojning" class="tab-content">
-        <div class="card">
-          <h2>Skogsvård: Röjning</h2>
-          <div class="grid-2">
-            <div class="form-group">
-              <label>Stammar/ha (FÖRE)</label>
-              <input type="number" id="roj-fore" value="4000">
-            </div>
-            <div class="form-group">
-              <label>Stammar/ha (EFTER)</label>
-              <input type="number" id="roj-efter" value="1800">
-            </div>
-          </div>
-          <div class="grid-2">
-            <div class="form-group">
-              <label>Medelhöjd (m)</label>
-              <input type="number" id="roj-hojd" value="3" step="0.1">
-            </div>
-            <div class="form-group">
-              <label>Areal (ha)</label>
-              <input type="number" id="roj-areal" value="2.0" step="0.1">
-            </div>
-          </div>
-          <button class="btn btn-cart" onclick="addRojningToCart()">🛒 Lägg till i Kalkyl</button>
-        </div>
-      </div>
-
-      <div id="tab-gallring" class="tab-content">
-        <div class="card">
-          <h2>Avancerad Gallringsanalys</h2>
-          <div class="form-group">
-            <label>Aktiv Prislista (Skogsbolag)</label>
-            <select id="gal-company-sync" onchange="syncCompanyPrices(this.value)">
-              <option value="SCA">SCA Skog (Standard Norrland)</option>
-              <option value="Norra">Norra Skog</option>
-              <option value="Sveaskog">Sveaskog</option>
-              <option value="Mellanskog">Mellanskog</option>
-            </select>
-          </div>
-          <div class="grid-2">
-            <div class="form-group">
-              <label>Areal (ha)</label>
-              <input type="number" id="gal-areal" value="4.5" step="0.1">
-            </div>
-            <div class="form-group">
-              <label>Grundyta (m²/ha)</label>
-              <input type="number" id="gal-gy" value="24">
-            </div>
-          </div>
-          <div class="grid-2">
-            <div class="form-group">
-              <label>Medelhöjd (hm)</label>
-              <input type="number" id="gal-hojd" value="16">
-            </div>
-            <div class="form-group">
-              <label>Huvudträdslag</label>
-              <select id="gal-tradslag" onchange="runLivePrognosis()">
-                <option value="Gran">Gran (f≈0.50)</option>
-                <option value="Tall">Tall (f≈0.44)</option>
-                <option value="Löv/Björk">Löv/Björk (f≈0.41)</option>
-              </select>
-            </div>
-          </div>
-          <div class="grid-2">
-            <div class="form-group">
-              <label>Mål för uttag (%)</label>
-              <input type="number" id="gal-uttag" value="30" oninput="runLivePrognosis()">
-            </div>
-            <div class="form-group">
-              <label>Medeldiameter (dgv)</label>
-              <input type="number" id="gal-d" value="18" oninput="runLivePrognosis()">
-            </div>
-          </div>
-
-          <div class="form-group" style="background:#f4f6f4; padding:10px; border-radius:4px;">
-            <label>Sortimentsfördelning (Timmerandel i %)</label>
-            <input type="range" id="gal-timmer-pct" min="0" max="100" value="40" oninput="updateTimmerLabels();">
-            <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:bold; color:#444; margin-top:2px;">
-              <span>Massaved: <span id="lbl-massa-pct">60%</span></span>
-              <span>Timmerandel: <span id="lbl-timmer-pct">40%</span></span>
-            </div>
-          </div>
-
-          <div class="grid-2">
-            <div class="form-group">
-              <label>Bärighetsklass (Mark)</label>
-              <select id="gal-bearing" onchange="runLivePrognosis()">
-                <option value="Hög">Hög bärighet (Fast mark/Morän)</option>
-                <option value="Mellan">Mellan (Normal skogsmark)</option>
-                <option value="Låg">Låg bärighet (Torv/Mofly/Lera)</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Stickvägsavstånd</label>
-              <select id="gal-distance">
-                <option value="20">20 meter (Standard)</option>
-                <option value="22">22 meter (Smala stickvägar)</option>
-              </select>
-            </div>
-          </div>
-          
-          <div id="terrain-alert" class="alert-box"></div>
-
-          <div style="background:#eef7ef; border:1px solid #c3e6cb; padding:15px; border-radius:6px; margin-top:15px;">
-            <h4 style="margin:0 0 8px 0; color:#155724;">📊 Produktionsprognos:</h4>
-            <p style="margin:4px 0;">Beräknad totalvolym före uttag: <span id="prog-tot-vol">0</span> m³fub</p>
-            <p style="margin:4px 0;">Beräknad uttagsmängd: <strong><span id="prog-out-vol">0</span> m³fub</strong></p>
-            <p style="font-size:0.85rem; color:#555; margin:4px 0; padding-left:10px;">
-              ↳ Timmer: <span id="prog-out-timmer">0</span> m³fub | Massaved: <span id="prog-out-massa">0</span> m³fub
-            </p>
-            <p style="margin:4px 0; font-size:1.1rem; color:#1e3f20;">
-              <strong>Uppskattat "Netto på stubben": <span id="prog-netto">0</span> kr</strong>
-            </p>
-          </div>
-          <button class="btn btn-cart" style="margin-top:15px;" onclick="addGallringToCart()">🛒 Lägg till i Kalkyl</button>
-        </div>
-      </div>
-
-      <div id="tab-plantering" class="tab-content">
-        <div class="card">
-          <h2>Plantering & Markberedning</h2>
-          <div class="grid-2">
-            <div class="form-group">
-              <label>Areal (ha)</label>
-              <input type="number" id="plan-areal" value="1.5" step="0.1">
-            </div>
-            <div class="form-group">
-              <label>Täthet (st/ha)</label>
-              <input type="number" id="plan-tathet" value="2200">
-            </div>
-          </div>
-          <div class="form-group">
-            <label style="display:flex; align-items:center; gap:8px;">
-              <input type="checkbox" id="plan-mb" checked style="width:auto;"> Inkludera kostnad för Markberedning
-            </label>
-          </div>
-          <button class="btn btn-cart" onclick="addPlanteringToCart()">🛒 Lägg till i Kalkyl</button>
-        </div>
-      </div>
-
-      <div id="tab-priser" class="tab-content">
-        <div class="card">
-          <h2>Anpassa Offertlogotyp</h2>
-          <div class="form-group">
-            <input type="file" id="logo-uploader" accept="image/*" onchange="handleLogoUpload(this)">
-            <div style="text-align:center;">
-              <img id="logo-preview" class="logo-preview-box" alt="Förhandsvisning">
-            </div>
-            <button class="btn btn-danger" id="btn-clear-logo" style="width:auto; padding:5px 10px; font-size:0.8rem; margin-top:5px; display:none;" onclick="clearSavedLogo()">Rensa sparad logga</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <h2>📈 Skogsbolagens Virkespriser</h2>
-          <div class="form-group">
-            <label>Välj Prislista</label>
-            <select id="cfg-skogsbolag" onchange="syncCompanyPrices(this.value)">
-              <option value="SCA">SCA Skog (Standard Norrland)</option>
-              <option value="Norra">Norra Skog</option>
-              <option value="Sveaskog">Sveaskog</option>
-              <option value="Mellanskog">Mellanskog</option>
-            </select>
-          </div>
-          <div class="grid-2">
-            <div class="form-group">
-              <label>Aktuellt Timmerpris (kr/m³fub)</label>
-              <input type="number" id="cfg-pris-timmer" value="680" oninput="runLivePrognosis()">
-            </div>
-            <div class="form-group">
-              <label>Aktuellt Massavedpris (kr/m³fub)</label>
-              <input type="number" id="cfg-pris-massa" value="420" oninput="runLivePrognosis()">
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <h2>⚙️ Egen Taxekonfiguration</h2>
-          <div class="form-group">
-            <label>Arbetskostnad Röjning (kr/h)</label>
-            <input type="number" id="cfg-roj-timme" value="550">
-          </div>
-          <div class="form-group">
-            <label>Snittpris Planta (kr/st)</label>
-            <input type="number" id="cfg-planta" value="6.5" step="0.1">
-          </div>
-          <div class="form-group">
-            <label>Markberedning (kr/ha)</label>
-            <input type="number" id="cfg-mb-ha" value="3200">
-          </div>
-        </div>
-      </div>
-
-      <div id="tab-kalkyl" class="tab-content">
-        <div class="card">
-          <h2>🛒 Kalkylsammanställning</h2>
-          <div class="form-group" style="margin-bottom: 15px; background: #fffdf5; padding: 10px; border-radius: 6px; border: 1px solid #eedcba;">
-            <label style="color: #a04000;">💼 Välj Offertläge / Presentation</label>
-            <select id="calc-mode" onchange="updateCartUI();" style="border-color: #d35400; font-weight: bold;">
-              <option value="netto">Skoglig balans (Visar + och - belopp)</option>
-              <option value="kostnad">Kostnadsoffert (Döljer minus, visar endast utgifter)</option>
-            </select>
-          </div>
-          <div id="cart-items-container"></div>
-          <div style="margin-top:15px; font-weight:bold; font-size:1.1rem; text-align:right;" id="cart-total">
-            Totalt exkl. moms: 0 kr
-          </div>
-          <div class="grid-2" style="margin-top:10px;">
-            <button class="btn btn-danger" onclick="clearCart()">Töm Kalkyl</button>
-            <button class="btn btn-success" onclick="saveCurrentContractToHistory()">💾 Spara Avtal Lokalt</button>
-          </div>
-          <button class="btn" style="background-color:#1e3f20; margin-top: 10px;" onclick="generateOffer()">📋 Generera Offert / Avtalsunderlag</button>
-        </div>
+    map.on('click', (e) => {
+        const lat = e.latlng.lat;
+        const lng = e.latlng.lng;
         
-        <div class="card">
-          <h2>✍️ Digital Kundsignatur</h2>
-          <canvas id="sig-pad" class="sig-canvas"></canvas>
-          <button class="btn btn-secondary" style="padding:5px; font-size:0.8rem; width:auto; margin-top:5px;" onclick="clearSignature()">Rensa Signatur</button>
-        </div>
-      </div>
+        const gpsInput = document.getElementById('kund-gps');
+        const swerefInput = document.getElementById('kund-sweref');
+        
+        if (gpsInput) gpsInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        const sweref = convertToSweref99TM(lat, lng);
+        if (swerefInput) swerefInput.value = `N: ${sweref.N}, E: ${sweref.E}`;
+        
+        if (marker) {
+            marker.setLatLng(e.latlng);
+        } else {
+            marker = L.marker(e.latlng, { draggable: true }).addTo(map);
+        }
+    });
+}
 
-    </div>
-  </div>
+function convertToSweref99TM(lat, lng) {
+    return {
+        N: Math.round(6900000 + (lat - 62) * 111200), 
+        E: Math.round(500000 + (lng - 15) * 53200)
+    };
+}
 
-  <div id="print-view">
-    <div class="print-header">
-      <div>
-        <h1 style="color:#1e3f20; margin:0 0 4px 0; font-size: 24pt; letter-spacing:-0.5px;" id="p-doc-type">PRISOFFERT</h1>
-        <div style="font-size:10pt; color:#555;">Dokument-ID: <span id="p-uuid" style="font-family:monospace; font-weight:bold;">-</span></div>
-      </div>
-      <div style="text-align: right;">
-        <div id="p-logo-wrapper" style="margin-bottom:10px; display:inline-block;">
-          <div class="print-logo-placeholder">🌲</div>
-        </div>
-        <div style="font-weight:bold; font-size:14pt; color:#1e3f20;">Norrlands Skogsvård</div>
-        <div style="font-size:9pt; color:#555; line-height:1.3; margin-top:4px;">
-          norrlandsskogsvard@gmail.com<br>
-          Skogsvårdstjänster & Fältplanering
-        </div>
-      </div>
-    </div>
+// --- Fältmätning & Provytor ---
+function setActiveSpecies(species) {
+    activeSpecies = species;
+    document.querySelectorAll('.species-btn').forEach(b => b.classList.remove('active-tall', 'active-gran', 'active-lov'));
+    const btn = document.getElementById(`s-btn-${species}`);
+    if (btn) {
+        if(species === 'Tall') btn.classList.add('active-tall');
+        if(species === 'Gran') btn.classList.add('active-gran');
+        if(species === 'Lov') btn.classList.add('active-lov');
+    }
+}
 
-    <div class="print-grid">
-      <div>
-        <div class="print-section-title">Beställare / Fastighetsägare</div>
-        <table style="width:100%; font-size:10pt;">
-          <tr><td style="font-weight:bold; width:100px; padding:4px 0; border:none;">Namn:</td><td style="padding:4px 0; border:none;" id="p-kund-namn">-</td></tr>
-          <tr><td style="font-weight:bold; padding:4px 0; border:none;">Pers./Org.nr:</td><td style="padding:4px 0; border:none;" id="p-kund-id">-</td></tr>
-          <tr><td style="font-weight:bold; padding:4px 0; border:none;">Datum:</td><td style="padding:4px 0; border:none;" id="p-datum">-</td></tr>
-        </table>
-      </div>
-      <div>
-        <div class="print-section-title">Fastighets- & Geodata</div>
-        <table style="width:100%; font-size:10pt;">
-          <tr><td style="font-weight:bold; width:130px; padding:4px 0; border:none;">Fastighet:</td><td style="padding:4px 0; border:none;" id="p-kund-fastighet">-</td></tr>
-          <tr><td style="font-weight:bold; padding:4px 0; border:none;">Kommun/Ort:</td><td style="padding:4px 0; border:none;" id="p-kund-ort">-</td></tr>
-          <tr><td style="font-weight:bold; padding:4px 0; border:none;">WGS84:</td><td style="padding:4px 0; border:none; font-family:monospace;" id="p-kund-gps">-</td></tr>
-          <tr><td style="font-weight:bold; padding:4px 0; border:none;">SWEREF 99 TM:</td><td style="padding:4px 0; border:none; font-family:monospace;" id="p-kund-sweref">-</td></tr>
-        </table>
-      </div>
-    </div>
+function setFieldVal(type, val) {
+    const el = document.getElementById(`field-${type}`);
+    if (el) el.value = val;
+}
 
-    <div class="print-section-title">Specifikation av Skogliga Åtgärder</div>
-    <table class="print-table">
-      <thead>
-        <tr>
-          <th>Åtgärdsbeskrivning / Projektdel</th>
-          <th style="width:100px; text-align:right;">Omfattning</th>
-          <th style="width:150px; text-align:right;">A-pris / Kalkylbas</th>
-          <th style="width:140px; text-align:right;">Belopp (exkl. moms)</th>
-        </tr>
-      </thead>
-      <tbody id="p-tbody">
-      </tbody>
-    </table>
+function addHalfVal(type) {
+    const el = document.getElementById(`field-${type}`);
+    if (el) el.value = (parseFloat(el.value) || 0) + 0.5;
+}
 
-    <div class="print-totals-wrapper" style="overflow: hidden; page-break-inside: avoid;">
-      <div class="print-totals">
-        <div class="print-totals-row">
-          <span id="p-label-exkl" style="font-weight:500;">Slutbalans/Netto exkl. moms:</span>
-          <span id="p-total-exkl" style="font-weight:bold; color:#111;">0 kr</span>
-        </div>
-        <div class="print-totals-row">
-          <span>Mervärdesskatt (25%):</span>
-          <span id="p-moms">0 kr</span>
-        </div>
-        <div class="print-totals-row grand-total">
-          <span id="p-label-inkl">Totalt att erhålla:</span>
-          <span id="p-total-inkl">0 kr</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="print-section-title">Entreprenörsinstruktion (Avvikelser & Hänsyn)</div>
-    <div id="p-field-notes" style="background:#fcfcfc; border:1px solid #ddd; padding:15px; font-size:10pt; border-radius:4px; min-height:40px;">
-      Inga registrerade miljö- eller terrängavvikelser för detta skifte.
-    </div>
-
-    <div class="print-signatures">
-      <div class="signature-container">
-        <div class="signature-line">
-          <strong>Norrlands Skogsvård</strong><br>
-          Ort & Datum / Entreprenörsrepresentant
-        </div>
-      </div>
-      <div class="signature-container">
-        <div style="position:relative;">
-          <img id="p-signature-img" style="max-height:65px; position:absolute; bottom:5px; left:20px; display:none;" alt="Kundsignatur">
-        </div>
-        <div class="signature-line">
-          <span id="p-sign-name">-</span><br>
-          Ort & Datum / Fastighetsägare (Godkännande av villkor)
-        </div>
-      </div>
-    </div>
+function addTreeRecord() {
+    const dInput = document.getElementById('field-d');
+    const hInput = document.getElementById('field-h');
     
-    <div style="margin-top:40px; text-align:center; padding-bottom: 20px;" class="no-print">
-      <button onclick="window.print()" class="btn btn-success" style="width:200px; padding:12px;">Skriv ut / Spara PDF</button>
-      <button onclick="exitPrintView()" class="btn btn-secondary" style="width:200px; padding:12px; margin-left:10px;">Slå av förhandsvisning</button>
-    </div>
-  </div>
+    const d = dInput ? (parseFloat(dInput.value) || 0) : 0;
+    const h = hInput ? (parseFloat(hInput.value) || 0) : 0;
+    
+    registeredTrees.push({ species: activeSpecies, d, h });
+    
+    const display = document.getElementById('tree-list-display');
+    if (display) {
+        display.innerHTML = registeredTrees.map((t, idx) => `#${idx+1}: [${t.species}] d:${t.d}cm h:${t.h}m`).join('<br>');
+    }
+}
 
-  <script src="app.js"></script>
-</body>
-</html>
+function clearTreeRecords() {
+    registeredTrees = [];
+    const display = document.getElementById('tree-list-display');
+    if (display) display.innerText = "Inga stammar registrerade än.";
+}
+
+function calculateFieldMetrics() {
+    if(registeredTrees.length === 0) {
+        alert("Registrera minst ett träd först!");
+        return;
+    }
+    let sumG = 0, sumGD = 0, sumH = 0;
+    registeredTrees.forEach(t => {
+        const g = Math.PI * Math.pow(t.d / 200, 2);
+        sumG += g;
+        sumGD += g * t.d;
+        sumH += t.h;
+    });
+    
+    computedDgv = sumG > 0 ? sumGD / sumG : 0;
+    computedHm = sumH / registeredTrees.length;
+    
+    const radiusInput = document.getElementById('field-radius');
+    const radius = radiusInput ? (parseFloat(radiusInput.value) || 0) : 0;
+    const factor = radius > 0 ? (10000 / (Math.PI * Math.pow(radius, 2))) : 0;
+    computedStemHa = Math.round(registeredTrees.length * factor);
+    
+    safelySetText('res-dgv', computedDgv.toFixed(1));
+    safelySetText('res-hm', computedHm.toFixed(1));
+    safelySetText('res-stem-ha', computedStemHa);
+}
+
+function transferMetricsToGallring() {
+    const galD = document.getElementById('gal-d');
+    const galHojd = document.getElementById('gal-hojd');
+    if (galD) galD.value = computedDgv.toFixed(1);
+    if (galHojd) galHojd.value = computedHm.toFixed(1);
+    switchTab('tab-gallring');
+    runLivePrognosis();
+}
+
+// --- Kalkyl & Gallringsfunktioner ---
+function updateTimmerLabels() {
+    const pctInput = document.getElementById('gal-timmer-pct');
+    const tPct = pctInput ? parseInt(pctInput.value) : 0;
+    safelySetText('lbl-timmer-pct', tPct + '%');
+    safelySetText('lbl-massa-pct', (100 - tPct) + '%');
+    runLivePrognosis();
+}
+
+function runLivePrognosis() {
+    const getValue = (id) => parseFloat(document.getElementById(id)?.value) || 0;
+    
+    const areal = getValue('gal-areal');
+    const gy = getValue('gal-gy');
+    const hojd = getValue('gal-hojd');
+    const uttag = getValue('gal-uttag');
+    const tPct = parseInt(document.getElementById('gal-timmer-pct')?.value) || 0;
+    
+    const pTimmer = getValue('cfg-pris-timmer');
+    const pMassa = getValue('cfg-pris-massa');
+    
+    let f = 0.45;
+    const species = document.getElementById('gal-tradslag')?.value;
+    if(species === 'Gran') f = 0.50;
+    if(species === 'Tall') f = 0.44;
+    
+    const totVol = gy * hojd * f * areal;
+    const outVol = totVol * (uttag / 100);
+    const vTimmer = outVol * (tPct / 100);
+    const vMassa = outVol * ((100 - tPct) / 100);
+    
+    const bearing = document.getElementById('gal-bearing')?.value;
+    const alertBox = document.getElementById('terrain-alert');
+    if(alertBox) {
+        if(bearing === 'Låg') {
+            alertBox.style.display = 'block';
+            alertBox.innerText = "⚠️ OBS: Svag bärighet. Körskaderisk identifierad! Kräver risning eller vinteravverkning.";
+        } else {
+            alertBox.style.display = 'none';
+        }
+    }
+    
+    const netto = (vTimmer * pTimmer) + (vMassa * pMassa);
+    
+    safelySetText('prog-tot-vol', Math.round(totVol));
+    safelySetText('prog-out-vol', Math.round(outVol));
+    safelySetText('prog-out-timmer', Math.round(vTimmer));
+    safelySetText('prog-out-massa', Math.round(vMassa));
+    safelySetText('prog-netto', Math.round(netto).toLocaleString('sv-SE'));
+    
+    return { totVol, outVol, vTimmer, vMassa, netto };
+}
+
+function syncCompanyPrices(key) {
+    if(priceLists[key]) {
+        const compSync = document.getElementById('gal-company-sync');
+        const cfgSkogs = document.getElementById('cfg-skogsbolag');
+        const cfgTimmer = document.getElementById('cfg-pris-timmer');
+        const cfgMassa = document.getElementById('cfg-pris-massa');
+        
+        if (compSync) compSync.value = key;
+        if (cfgSkogs) cfgSkogs.value = key;
+        if (cfgTimmer) cfgTimmer.value = priceLists[key].timmer;
+        if (cfgMassa) cfgMassa.value = priceLists[key].massa;
+        runLivePrognosis();
+    }
+}
+
+// --- Kalkylvagnshantering (Cart) ---
+function addRojningToCart() {
+    const ar = parseFloat(document.getElementById('roj-areal')?.value) || 0;
+    const h = document.getElementById('roj-hojd')?.value || "0";
+    const p = parseFloat(document.getElementById('cfg-roj-timme')?.value) || 0;
+    const cost = ar * 8 * p;
+    
+    cart.push({ type: 'Röjning', desc: `Ungskogsröjning, medelhöjd ${h}m`, area: ar, rate: `${p} kr/h (Est. 8h/ha)`, amount: Math.abs(cost) });
+    updateCartUI();
+}
+
+function addGallringToCart() {
+    const data = runLivePrognosis();
+    const ar = parseFloat(document.getElementById('gal-areal')?.value) || 0;
+    const sp = document.getElementById('gal-tradslag')?.value || "Tall";
+    cart.push({ type: 'Gallring', desc: `Avverkning/Gallring (${sp}) - Uttag på ${Math.round(data.outVol)} m³fub`, area: ar, rate: 'Virkesnetto', amount: Math.abs(data.netto) });
+    updateCartUI();
+}
+
+function addPlanteringToCart() {
+    const ar = parseFloat(document.getElementById('plan-areal')?.value) || 0;
+    const t = parseInt(document.getElementById('plan-tathet')?.value) || 0;
+    const pPlanta = parseFloat(document.getElementById('cfg-planta')?.value) || 0;
+    const incMb = document.getElementById('plan-mb')?.checked;
+    const cMb = parseFloat(document.getElementById('cfg-mb-ha')?.value) || 0;
+    
+    let cost = ar * t * pPlanta;
+    let desc = `Plantering (${t} st/ha, á ${pPlanta}kr)`;
+    if(incMb) {
+        cost += (ar * cMb);
+        desc += ` inkl. maskinell markberedning`;
+    }
+    
+    cart.push({ type: 'Plantering', desc: desc, area: ar, rate: 'Löpande taxa', amount: Math.abs(cost) });
+    updateCartUI();
+}
+
+function updateCartUI() {
+    safelySetText('cart-count', cart.length);
+    const container = document.getElementById('cart-items-container');
+    if(!container) return;
+    
+    if(cart.length === 0) {
+        container.innerText = "Kalkylen är tom.";
+        safelySetText('cart-total', "Totalt exkl. moms: 0 kr");
+        return;
+    }
+    
+    let total = 0;
+    const calcMode = document.getElementById('calc-mode')?.value || "netto";
+    
+    container.innerHTML = cart.map((item, idx) => {
+        const rawAmount = Math.abs(item.amount); 
+        const isExpense = (item.type === 'Röjning' || item.type === 'Plantering');
+        
+        if (isExpense) {
+            total -= rawAmount;
+        } else {
+            total += rawAmount;
+        }
+        
+        const color = isExpense ? "red" : "green";
+        
+        let prefix = "";
+        if (calcMode === "netto") {
+            prefix = isExpense ? "-" : "+";
+        }
+        
+        return `<div class="cart-item">
+            <div><strong>${item.type}</strong> - ${item.desc} (${item.area} ha)</div>
+            <div style="color:${color}; font-weight:bold;">${prefix}${Math.round(rawAmount).toLocaleString('sv-SE')} kr 
+            <button class="btn btn-danger" style="width:auto; padding:2px 6px; font-size:0.75rem; margin-left:10px;" onclick="removeItem(${idx})">X</button></div>
+        </div>`;
+    }).join('');
+    
+    let displayText = "";
+    if (calcMode === "kostnad") {
+        // I kostnadsläge summerar vi bara kostnaderna (röjning & plantering)
+        let costTotal = 0;
+        cart.forEach(item => {
+            if(item.type === 'Röjning' || item.type === 'Plantering') {
+                costTotal += Math.abs(item.amount);
+            }
+        });
+        displayText = `Offert Kostnad (exkl. moms): ${Math.round(costTotal).toLocaleString('sv-SE')} kr`;
+    } else {
+        displayText = `Balans/Totalt exkl. moms: ${Math.round(total).toLocaleString('sv-SE')} kr`;
+    }
+    
+    const totalBox = document.getElementById('cart-total');
+    if (totalBox) totalBox.innerText = displayText;
+}
+
+function removeItem(idx) {
+    cart.splice(idx, 1);
+    updateCartUI();
+}
+
+function clearCart() {
+    cart = [];
+    updateCartUI();
+}
+
+// --- Kartmärken & Avvikelser ---
+function addFieldNote() {
+    const type = document.getElementById('note-type')?.value || "Övrigt";
+    const coords = document.getElementById('kund-gps')?.value || "Ej spec.";
+    fieldNotes.push({ type, coords });
+    
+    const display = document.getElementById('saved-notes-display');
+    if (display) {
+        display.innerHTML = fieldNotes.map(n => `📍 <strong>${n.type}</strong> (${n.coords})`).join('<br>');
+    }
+}
+
+// --- Logohantering & Lokallagring ---
+function handleLogoUpload(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            savedLogoDataUrl = e.target.result;
+            try {
+                localStorage.setItem('fieldpro_user_logo', savedLogoDataUrl);
+            } catch(error) {
+                console.warn("Kunde inte spara logotyp lokalt (LocalStorage fullt):", error);
+            }
+            showLogoPreview();
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function showLogoPreview() {
+    const preview = document.getElementById('logo-preview');
+    if (preview) {
+        preview.src = savedLogoDataUrl;
+        preview.style.display = 'block';
+    }
+    const btn = document.getElementById('btn-clear-logo');
+    if (btn) btn.style.display = 'inline-block';
+}
+
+function clearSavedLogo() {
+    savedLogoDataUrl = "";
+    try {
+        localStorage.removeItem('fieldpro_user_logo');
+    } catch(e) {}
+    
+    const preview = document.getElementById('logo-preview');
+    if (preview) preview.style.display = 'none';
+    
+    const btn = document.getElementById('btn-clear-logo');
+    if (btn) btn.style.display = 'none';
+    
+    const uploader = document.getElementById('logo-uploader');
+    if (uploader) uploader.value = "";
+}
+
+function loadSavedLogo() {
+    try {
+        const stored = localStorage.getItem('fieldpro_user_logo');
+        if(stored) {
+            savedLogoDataUrl = stored;
+            showLogoPreview();
+        }
+    } catch(e) {}
+}
+
+// --- Digital Signatur ---
+function initSignaturePad() {
+    canvas = document.getElementById('sig-pad');
+    if (!canvas) return;
+    ctx = canvas.getContext('2d');
+    
+    function getPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: (e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0)) - rect.left,
+            y: (e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0)) - rect.top
+        };
+    }
+    
+    function start(e) { isDrawing = true; ctx.beginPath(); const p = getPos(e); ctx.moveTo(p.x, p.y); }
+    function move(e) { if(!isDrawing) return; e.preventDefault(); const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); }
+    function stop() { isDrawing = false; }
+    
+    canvas.addEventListener('mousedown', start);
+    canvas.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', stop);
+    
+    canvas.addEventListener('touchstart', start);
+    canvas.addEventListener('touchmove', move);
+    window.addEventListener('touchend', stop);
+}
+
+function clearSignature() {
+    if(ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+// --- GENERERING AV OFFERT ---
+function generateOffer() {
+    if(cart.length === 0) {
+        alert("Lägg till minst en åtgärd i din kalkyl innan du skapar en offert.");
+        return;
+    }
+    
+    const docTypeVal = document.getElementById('doc-type')?.value || "PRISOFFERT";
+    const datumVal = document.getElementById('kund-datum')?.value || "-";
+    const namnVal = document.getElementById('kund-namn')?.value || "Ej angiven";
+    const idVal = document.getElementById('kund-id')?.value || "-";
+    const fastighetVal = document.getElementById('kund-fastighet')?.value || "-";
+    const ortVal = document.getElementById('kund-ort')?.value || "-";
+    const gpsVal = document.getElementById('kund-gps')?.value || "-";
+    const swerefVal = document.getElementById('kund-sweref')?.value || "-";
+    const calcMode = document.getElementById('calc-mode')?.value || "netto";
+
+    safelySetText('p-doc-type', docTypeVal.toUpperCase());
+    safelySetText('p-datum', datumVal);
+    safelySetText('p-uuid', Math.floor(100000 + Math.random() * 900000));
+    
+    safelySetText('p-kund-namn', namnVal);
+    safelySetText('p-sign-name', namnVal || "Fastighetsägare");
+    safelySetText('p-kund-id', idVal);
+    safelySetText('p-kund-fastighet', fastighetVal);
+    safelySetText('p-kund-ort', ortVal);
+    safelySetText('p-kund-gps', gpsVal);
+    safelySetText('p-kund-sweref', swerefVal);
+    
+    const wrapper = document.getElementById('p-logo-wrapper');
+    if(wrapper) {
+        if(savedLogoDataUrl) {
+            wrapper.innerHTML = `<img src="${savedLogoDataUrl}" style="max-width:140px; max-height:70px; object-fit:contain;">`;
+        } else {
+            wrapper.innerHTML = `<div class="print-logo-placeholder">🌲</div>`;
+        }
+    }
+    
+    let totalSum = 0;
+    const tbody = document.getElementById('p-tbody');
+    
+    // Filtrera rader och bygg tabellen beroende på valt presentationsläge
+    const filteredCart = cart.filter(item => {
+        if (calcMode === "kostnad") {
+            // I kostnadsläge visar vi enbart utgifter
+            return (item.type === 'Röjning' || item.type === 'Plantering');
+        }
+        return true;
+    });
+
+    const rowsHtml = filteredCart.map(item => {
+        const rawAmount = Math.abs(Number(item.amount)); 
+        const isExpense = (item.type === 'Röjning' || item.type === 'Plantering');
+        
+        let prefix = "";
+        if (calcMode === "netto") {
+            prefix = isExpense ? "-" : "+";
+            if (isExpense) totalSum -= rawAmount;
+            else totalSum += rawAmount;
+        } else {
+            // I rent kostnadsläge plussar vi ihop utgifterna till ett positivt totalbelopp
+            totalSum += rawAmount;
+        }
+        
+        const displayAmount = prefix + Math.round(rawAmount).toLocaleString('sv-SE') + " kr";
+        
+        return `<tr>
+            <td><strong>${item.type}</strong><br><span style="font-size:9pt; color:#555;">${item.desc}</span></td>
+            <td style="text-align:right;">${item.area} ha</td>
+            <td style="text-align:right; color:#666;">${item.rate}</td>
+            <td style="text-align:right; font-weight:bold;">${displayAmount}</td>
+        </tr>`;
+    }).join('');
+    
+    if (tbody) tbody.innerHTML = rowsHtml;
+    
+    // Justera texter dynamiskt baserat på valt presentationsläge
+    if (calcMode === "kostnad") {
+        safelySetText('p-label-exkl', "Total kostnad exkl. moms:");
+        safelySetText('p-label-inkl', "Totalt att betala (inkl. moms):");
+    } else {
+        if (totalSum >= 0) {
+            safelySetText('p-label-exkl', "Slutbalans exkl. moms (Netto överskott):");
+            safelySetText('p-label-inkl', "Totalt att erhålla:");
+        } else {
+            safelySetText('p-label-exkl', "Slutbalans exkl. moms (Underskott):");
+            safelySetText('p-label-inkl', "Totalt att betala:");
+            totalSum = Math.abs(totalSum); // Gör positiv för snyggare presentation av underskott
+        }
+    }
+
+    const moms = totalSum * 0.25;
+    const totalInkl = totalSum + moms;
+    
+    safelySetText('p-total-exkl', Math.round(totalSum).toLocaleString('sv-SE') + " kr");
+    safelySetText('p-moms', Math.round(moms).toLocaleString('sv-SE') + " kr");
+    safelySetText('p-total-inkl', Math.round(totalInkl).toLocaleString('sv-SE') + " kr");
+    
+    const notesDiv = document.getElementById('p-field-notes');
+    if(notesDiv) {
+        if(fieldNotes.length > 0) {
+            notesDiv.innerHTML = fieldNotes.map(n => `⚠️ <strong>${n.type}</strong> (Position: ${n.coords})`).join('<br>');
+        } else {
+            notesDiv.innerText = "Inga registrerade miljö- eller terrängavvikelser för detta skifte.";
+        }
+    }
+    
+    const sigImg = document.getElementById('p-signature-img');
+    if(sigImg && canvas) {
+        try {
+            sigImg.src = canvas.toDataURL();
+            sigImg.style.display = 'block';
+        } catch(e) {
+            console.error("Kunde inte hämta signatur:", e);
+        }
+    }
+    
+    window.scrollTo(0,0);
+    const printView = document.getElementById('print-view');
+    if (printView) printView.style.display = 'block';
+}
+
+function exitPrintView() {
+    const printView = document.getElementById('print-view');
+    if (printView) printView.style.display = 'none';
+    window.scrollTo(0,0);
+}
+
+// --- Historikhantering lokalt ---
+function saveCurrentContractToHistory() {
+    const name = document.getElementById('kund-namn')?.value || "Okänd kund";
+    const fastighet = document.getElementById('kund-fastighet')?.value || "Okänd fastighet";
+    const date = document.getElementById('kund-datum')?.value || "-";
+    
+    try {
+        const historyData = JSON.parse(localStorage.getItem('fieldpro_history') || '[]');
+        historyData.push({ name, fastighet, date, cartCount: cart.length });
+        localStorage.setItem('fieldpro_history', JSON.stringify(historyData));
+        loadHistory();
+        alert("Avtalet har arkiverats offline på enheten!");
+    } catch(e) {
+        console.error("Kunde inte spara historik:", e);
+    }
+}
+
+function loadHistory() {
+    try {
+        const historyData = JSON.parse(localStorage.getItem('fieldpro_history') || '[]');
+        const container = document.getElementById('history-list-container');
+        if(!container) return;
+        
+        if(historyData.length === 0) {
+            container.innerText = "Inga historiska kontrakt sparade lokalt.";
+            return;
+        }
+        container.innerHTML = historyData.map(h => `<div class="history-item">
+            <div>📁 <strong>${h.name}</strong> - ${h.fastighet} (${h.date})</div>
+            <div style="font-size:0.8rem; background:#1e3f20; color:white; padding:2px 6px; border-radius:4px;">${h.cartCount} åtgärder</div>
+        </div>`).join('');
+    } catch(e) {}
+}
