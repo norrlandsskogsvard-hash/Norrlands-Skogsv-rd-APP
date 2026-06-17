@@ -1,9 +1,9 @@
 {
-  "short_name": "Skogskalkyl Pro",
-  "name": "Skogskalkylator Pro Fält",
+  "short_name": "SkogsvårdFält",
+  "name": "Norrlands Skogsvård Fält Pro",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/684/684611.png",
+      "src": "https://cdn-icons-png.flaticon.com/512/3331/3331265.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any maskable"
