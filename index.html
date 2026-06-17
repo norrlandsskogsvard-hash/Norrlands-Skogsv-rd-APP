@@ -442,6 +442,40 @@ function setCoordinates(lat, lng) {
     .catch(() => console.log("Fastighetsuppslag offline. Fortsätter med manuella priser."));
 }
 
+    function matchGeographicPrice(lan) {
+      const lanNamn = lan.toLowerCase();
+      let valtBolag = "";
+      
+      const regionPriser = {
+        norra_skog: { bolag: "Norra Skog", roj: 560, planta: 6.4, mb: 3100, virke: 495 },
+        sca_skog: { bolag: "SCA Skog", roj: 590, planta: 6.9, mb: 3500, virke: 520 },
+        mellanskog: { bolag: "Mellanskog", roj: 580, planta: 6.8, mb: 3400, virke: 510 }
+      };
+
+      if (lanNamn.includes("norrbotten") || lanNamn.includes("västerbotten")) {
+        valtBolag = "norra_skog";
+      } else if (lanNamn.includes("västernorrland") || lanNamn.includes("jämtland")) {
+        valtBolag = "sca_skog";
+      } else if (lanNamn.includes("gävleborg") || lanNamn.includes("dalarna") || lanNamn.includes("värmland") || lanNamn.includes("uppsala") || lanNamn.includes("örebro")) {
+        valtBolag = "mellanskog";
+      }
+
+      if (valtBolag && regionPriser[valtBolag]) {
+        const data = regionPriser[valtBolag];
+        
+        document.getElementById('cfg-roj-timme').value = data.roj;
+        document.getElementById('cfg-planta').value = data.planta;
+        document.getElementById('cfg-mb-ha').value = data.mb;
+        document.getElementById('cfg-virke').value = data.virke;
+        
+        const templateSelect = document.getElementById('price-template');
+        if (valtBolag === "norra_skog") templateSelect.value = "norra";
+        if (valtBolag === "sca_skog") templateSelect.value = "sca";
+        if (valtBolag === "mellanskog") templateSelect.value = "mellanskog";
+
+        console.log(`Geografisk prishämtning: Matchade ${lan} med ${data.bolag}`);
+      }
+    }
     function getGPS() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(function(pos) {
