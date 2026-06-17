@@ -44,7 +44,7 @@ function switchTab(tabId) {
     }
 }
 
-// --- GPS-FUNKTION MED AUTOMATISK TEXTPLACERING ---
+// --- GPS-FUNKTION ---
 function getGPS() {
     const gpsInput = document.getElementById('kund-gps');
     const swerefInput = document.getElementById('kund-sweref');
@@ -70,11 +70,9 @@ function getGPS() {
             
             gpsInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
             
-            // Konvertering till SWEREF 99 TM
             const sweref = convertToSweref99TM(lat, lng);
             swerefInput.value = `N: ${sweref.N}, E: ${sweref.E}`;
             
-            // Flytta kartan till aktuell position
             if (map) {
                 map.setView([lat, lng], 16);
                 if (marker) {
@@ -82,7 +80,6 @@ function getGPS() {
                 } else {
                     marker = L.marker([lat, lng], { draggable: true }).addTo(map);
                 }
-                // Sätter en beskrivande text baserad på koordinaterna
                 fastighetInput.value = `Skifte vid Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
             }
         },
@@ -94,7 +91,7 @@ function getGPS() {
                     alert("Du måste godkänna platstjänster i webbläsaren för att spåra skiftet.");
                     break;
                 case error.TIMEOUT:
-                    alert("Tog för lång tid att hämta GPS. Försök igen eller stå utomhus under öppen himmel.");
+                    alert("Tog för lång tid att hämta GPS. Försök igen.");
                     break;
                 default:
                     alert("Ett internt GPS-fel uppstod vid fältetablering.");
@@ -304,7 +301,7 @@ function updateCartUI() {
     
     let total = 0;
     container.innerHTML = cart.map((item, idx) => {
-        const rawAmount = Math.abs(item.amount); // Garantera absolut tal för visningen
+        const rawAmount = Math.abs(item.amount); 
         const isExpense = (item.type === 'Röjning' || item.type === 'Plantering');
         
         if (isExpense) {
@@ -349,7 +346,7 @@ function addFieldNote() {
     document.getElementById('saved-notes-display').innerHTML = fieldNotes.map(n => `📍 <strong>${n.type}</strong> (${n.coords})`).join('<br>');
 }
 
-// --- Logohantering & Lokallagring (Offline) ---
+// --- Logohantering & Lokallagring ---
 function handleLogoUpload(input) {
     if (input.files && input.files[0]) {
         const reader = new FileReader();
@@ -385,7 +382,7 @@ function loadSavedLogo() {
     }
 }
 
-// --- Digital Signatur Logik ---
+// --- Digital Signatur ---
 function initSignaturePad() {
     canvas = document.getElementById('sig-pad');
     ctx = canvas.getContext('2d');
@@ -415,14 +412,13 @@ function clearSignature() {
     if(ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
-// --- FELSÄKRAD GENERERING AV OFFERT UTAN DUBBLA MINUSTECKEN ---
+// --- SKOTTSÄKER GENERERING AV OFFERT ---
 function generateOffer() {
     if(cart.length === 0) {
         alert("Lägg till minst en åtgärd i din kalkyl innan du skapar en offert.");
         return;
     }
     
-    // Synka fältdata till utskriftsmallen
     document.getElementById('p-doc-type').innerText = document.getElementById('doc-type').value.toUpperCase();
     document.getElementById('p-datum').innerText = document.getElementById('kund-datum').value;
     document.getElementById('p-uuid').innerText = Math.floor(100000 + Math.random() * 900000);
@@ -446,7 +442,8 @@ function generateOffer() {
     const tbody = document.getElementById('p-tbody');
     
     tbody.innerHTML = cart.map(item => {
-        const rawAmount = Math.abs(item.amount); // Tvinga till absolut tal för att radera dolda minustecken från Math-funktioner
+        // HÄR RENSAS ALLA EVENTUELLA DOLDA MINUSTECKEN FRÅN KÄLLAN
+        const rawAmount = Math.abs(item.amount); 
         const isExpense = (item.type === 'Röjning' || item.type === 'Plantering');
         
         if(isExpense) {
@@ -455,7 +452,6 @@ function generateOffer() {
             nettoSum += rawAmount;
         }
         
-        // Sätt prefixet helt manuellt och säkert här
         const prefix = isExpense ? "-" : "+";
         const displayAmount = prefix + Math.round(rawAmount).toLocaleString('sv-SE') + " kr";
         
@@ -467,21 +463,18 @@ function generateOffer() {
         </tr>`;
     }).join('');
     
-    // Beräkna moms och slutbelopp baserat på det rena nettot
     const moms = nettoSum * 0.25;
     const totalInkl = nettoSum + moms;
     
-    // Bestäm slutgiltiga tecken (+/-) för totalsammanställningen på offerten
     const nettoPrefix = nettoSum < 0 ? "-" : "";
     const momsPrefix = moms < 0 ? "-" : "";
     const inklPrefix = totalInkl < 0 ? "-" : "";
     
-    // Skriv ut fälten helt immuna mot dolda minustecken i källvariabeln
+    // HÄR ANVÄNDS MATH.ABS() ÄVEN PÅ SLUTSUMMORNA INNAN FORMATEING
     document.getElementById('p-total-exkl').innerText = nettoPrefix + Math.round(Math.abs(nettoSum)).toLocaleString('sv-SE') + " kr";
     document.getElementById('p-moms').innerText = momsPrefix + Math.round(Math.abs(moms)).toLocaleString('sv-SE') + " kr";
     document.getElementById('p-total-inkl').innerText = inklPrefix + Math.round(Math.abs(totalInkl)).toLocaleString('sv-SE') + " kr";
     
-    // Miljö- och terrängavvikelser
     const notesDiv = document.getElementById('p-field-notes');
     if(fieldNotes.length > 0) {
         notesDiv.innerHTML = fieldNotes.map(n => `⚠️ <strong>${n.type}</strong> (Position: ${n.coords})`).join('<br>');
@@ -489,12 +482,10 @@ function generateOffer() {
         notesDiv.innerText = "Inga registrerade miljö- eller terrängavvikelser för detta skifte.";
     }
     
-    // Överför namnteckning från ritplattan till utskriftsbilden
     const sigImg = document.getElementById('p-signature-img');
     sigImg.src = canvas.toDataURL();
     sigImg.style.display = 'block';
     
-    // Växla vy till förhandsgranskning
     window.scrollTo(0,0);
     document.getElementById('print-view').style.display = 'block';
 }
