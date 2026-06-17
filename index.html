@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Norrlands Skogsvård - Fält Pro Enterprise v7</title>
+  <title>Norrlands Skogsvård - Fält Pro Enterprise v8</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#1e3f20">
   
@@ -60,7 +60,6 @@
     .alert-box { background: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 10px; border-radius: 4px; margin-top: 10px; font-size: 0.9rem; font-weight: bold; display: none; }
     .logo-preview-box { max-width: 150px; max-height: 100px; margin-top: 10px; border: 1px solid #ccc; border-radius: 4px; padding: 5px; display: none; background: white; }
 
-    /* Historiklista */
     .history-item { border-bottom: 1px solid #ddd; padding: 10px 0; display: flex; justify-content: space-between; align-items: center; }
 
     #print-view { display: none; background: white; padding: 40px; color: black; }
@@ -140,7 +139,7 @@
         </div>
 
         <div class="card">
-          <h2>Fältkarta & Avvikelsepunkter (Maskininstruktion)</h2>
+          <h2>Fältkarta (Satellitvy) & Avvikelsepunkter</h2>
           <div id="map"></div>
           
           <div style="background:#f9f9f9; padding:10px; border-radius:6px; border:1px solid #ddd; margin-top:10px;">
@@ -380,7 +379,7 @@
       <div id="tab-priser" class="tab-content">
         <div class="card">
           <h2>🖼️ Anpassa Offertlogotyp</h2>
-          <p style="font-size:0.85rem; color:#666;">Välj din företagslogga (t.ex. <em>Logga 480.800.png</em>) från din enhet. Den sparas offline i appen.</p>
+          <p style="font-size:0.85rem; color:#666;">Välj din företagslogga från din enhet. Den sparas offline i appen.</p>
           <div class="form-group">
             <input type="file" id="logo-uploader" accept="image/*" onchange="handleLogoUpload(this)">
             <img id="logo-preview" class="logo-preview-box" alt="Förhandsvisning logga">
@@ -531,7 +530,6 @@
 
     document.getElementById('kund-datum').value = new Date().toISOString().split('T')[0];
 
-    // PWA-motor registration
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js');
@@ -572,10 +570,17 @@
       document.getElementById('logo-uploader').value = "";
     }
 
+    // NYHET: INTERAKTIV SATELLITKARTA INTEGRERAD
     function initMap() {
       const startPos = [62.6323, 17.9379];
       map = L.map('map').setView(startPos, 10);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+      
+      // Laddar högupplöst satellitdata från Esri som standard för skoglig precision
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+      }).addTo(map);
+
       map.on('click', e => setCoordinates(e.latlng.lat, e.latlng.lng));
     }
 
@@ -640,7 +645,6 @@
 
     function transferMetricsToGallring() { document.getElementById('gal-d').value = computedDgv.toFixed(1); document.getElementById('gal-hojd').value = computedHm.toFixed(1); runLivePrognosis(); switchTab('tab-gallring'); }
 
-    // UPPDATERAD RUNLIVEPROGNOS (RÄKNAR PÅ TIMMER VS MASSAVED SEPARAT)
     function runLivePrognosis() {
       const areal = parseFloat(document.getElementById('gal-areal').value) || 0;
       const gy = parseFloat(document.getElementById('gal-gy').value) || 0;
@@ -691,7 +695,6 @@
 
     function clearCart() { cart = []; updateCartUI(); }
 
-    // HISTORIKFUNKTIONER (SPARA OCH ÖPPNA AVTAL FRÅN LOCALSTORAGE)
     function saveCurrentContractToHistory() {
       if(cart.length === 0) return alert("Det finns ingenting i kalkylen att spara.");
       const history = JSON.parse(localStorage.getItem('fieldpro_contract_history') || '[]');
@@ -784,6 +787,8 @@
       if (canvas.toDataURL() !== document.createElement('canvas').toDataURL()) {
         document.getElementById('p-signature-img').src = canvas.toDataURL(); document.getElementById('p-signature-img').style.display = 'block';
       }
+      
+      // Kartbilaga för utskrift
       if (marker) {
         const c = marker.getLatLng();
         document.getElementById('print-map-container').innerHTML = `<img src="https://maps.geoapify.com/v1/staticmap?style=osm-carto&width=600&height=300&center=lonlat:${c.lng},${c.lat}&zoom=13&marker=lonlat:${c.lng},${c.lat};color:%23ff0000" style="width:100%; height:100%; object-fit:cover;">`;
