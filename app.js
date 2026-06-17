@@ -360,7 +360,12 @@ function updateCartUI() {
         }
         
         const color = isExpense ? "red" : "green";
-        const prefix = isExpense ? "-" : "+";
+        
+        // Ta bort minustecken i kalkylvagnen om Kostnadsläget är aktivt
+        let prefix = "";
+        if (calcMode === "netto") {
+            prefix = isExpense ? "-" : "+";
+        }
         
         return `<div class="cart-item">
             <div><strong>${item.type}</strong> - ${item.desc} (${item.area} ha)</div>
@@ -537,7 +542,12 @@ function generateOffer() {
             nettoSum += rawAmount;
         }
         
-        const prefix = isExpense ? "-" : "+";
+        // HÄR SNYGGAR VI TILL RADERNA: Om läget är 'kostnad' döljs minustecknet helt
+        let prefix = "";
+        if (calcMode === "netto") {
+            prefix = isExpense ? "-" : "+";
+        }
+        
         const displayAmount = prefix + Math.round(rawAmount).toLocaleString('sv-SE') + " kr";
         
         return `<tr>
@@ -552,7 +562,7 @@ function generateOffer() {
     
     let finalNetto = nettoSum;
     if (calcMode === "kostnad") {
-        finalNetto = Math.abs(nettoSum);
+        finalNetto = Math.abs(nettoSum); // Tvinga positivt belopp för slutsumman
         safelySetText('p-label-exkl', "Total Kostnad exkl. moms:");
     } else {
         safelySetText('p-label-exkl', "Slutbalans/Netto exkl. moms:");
