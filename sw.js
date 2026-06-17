@@ -1,4 +1,4 @@
-const CACHE_NAME = 'skogskalkyl-v2';
+const CACHE_NAME = 'skogskalkyl-v3';
 const ASSETS = [
   './',
   './index.html',
