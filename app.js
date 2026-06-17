@@ -20,7 +20,6 @@ const priceLists = {
 let canvas, ctx, isDrawing = false;
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Sätt dagens datum som standard
     const dateInput = document.getElementById('kund-datum');
     if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
     
@@ -42,8 +41,8 @@ function switchTab(tabId) {
     const targetTab = document.getElementById(tabId);
     if (targetTab) targetTab.classList.add('active');
     
-    if(event && event.currentTarget && event.currentTarget.tagName === 'BUTTON') {
-        event.currentTarget.classList.add('active');
+    if(window.event && window.event.currentTarget && window.event.currentTarget.tagName === 'BUTTON') {
+        window.event.currentTarget.classList.add('active');
     }
     if(tabId === 'tab-kund' && map) {
         setTimeout(() => map.invalidateSize(), 200);
@@ -348,7 +347,6 @@ function updateCartUI() {
     }
     
     let total = 0;
-    // Kontrollera om användaren valt att visa som ren Kostnadsredovisning (utan minus)
     const calcMode = document.getElementById('calc-mode')?.value || "netto";
     
     container.innerHTML = cart.map((item, idx) => {
@@ -371,7 +369,6 @@ function updateCartUI() {
         </div>`;
     }).join('');
     
-    // Formatera slutsumman strängt utifrån önskat gränssnittsläge
     let displayText = "";
     if (calcMode === "kostnad") {
         displayText = `Offert Kostnad (exkl. moms): ${Math.round(Math.abs(total)).toLocaleString('sv-SE')} kr`;
@@ -411,7 +408,11 @@ function handleLogoUpload(input) {
         const reader = new FileReader();
         reader.onload = function(e) {
             savedLogoDataUrl = e.target.result;
-            localStorage.setItem('fieldpro_user_logo', savedLogoDataUrl);
+            try {
+                localStorage.setItem('fieldpro_user_logo', savedLogoDataUrl);
+            } catch(error) {
+                console.warn("Kunde inte spara logotyp lokalt (LocalStorage fullt):", error);
+            }
             showLogoPreview();
         };
         reader.readAsDataURL(input.files[0]);
@@ -430,7 +431,9 @@ function showLogoPreview() {
 
 function clearSavedLogo() {
     savedLogoDataUrl = "";
-    localStorage.removeItem('fieldpro_user_logo');
+    try {
+        localStorage.removeItem('fieldpro_user_logo');
+    } catch(e) {}
     
     const preview = document.getElementById('logo-preview');
     if (preview) preview.style.display = 'none';
@@ -443,11 +446,13 @@ function clearSavedLogo() {
 }
 
 function loadSavedLogo() {
-    const stored = localStorage.setItem ? localStorage.getItem('fieldpro_user_logo') : null;
-    if(stored) {
-        savedLogoDataUrl = stored;
-        showLogoPreview();
-    }
+    try {
+        const stored = localStorage.getItem('fieldpro_user_logo');
+        if(stored) {
+            savedLogoDataUrl = stored;
+            showLogoPreview();
+        }
+    } catch(e) {}
 }
 
 // --- Digital Signatur ---
@@ -460,7 +465,7 @@ function initSignaturePad() {
         const rect = canvas.getBoundingClientRect();
         return {
             x: (e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0)) - rect.left,
-            y: (e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0)) - rect.top
+            y: (e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientX : 0)) - rect.top
         };
     }
     
@@ -481,15 +486,14 @@ function clearSignature() {
     if(ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
-// --- SKOTTSÄKER OCH KORRIGERAD GENERERING AV OFFERT ---
+// --- GENERERING AV OFFERT ---
 function generateOffer() {
     if(cart.length === 0) {
         alert("Lägg till minst en åtgärd i din kalkyl innan du skapar en offert.");
         return;
     }
     
-    // Hämta värden säkert utan att riskera krasch om elementen saknas i HTML
-    const docTypeVal = document.getElementById('doc-type')?.value || "OFFERT";
+    const docTypeVal = document.getElementById('doc-type')?.value || "PRISOFFERT";
     const datumVal = document.getElementById('kund-datum')?.value || "-";
     const namnVal = document.getElementById('kund-namn')?.value || "Ej angiven";
     const idVal = document.getElementById('kund-id')?.value || "-";
@@ -546,16 +550,12 @@ function generateOffer() {
     
     if (tbody) tbody.innerHTML = rowsHtml;
     
-    // Hantera visningsläge för totalsummeringen på utskriften
     let finalNetto = nettoSum;
     if (calcMode === "kostnad") {
-        // Tvinga positivt belopp vid en ren kostnadsredovisning
         finalNetto = Math.abs(nettoSum);
-        const labelExkl = document.querySelector('td[id="p-total-exkl"]')?.previousElementSibling;
-        if (labelExkl) labelExkl.innerHTML = "<strong>Total Kostnad exkl. moms:</strong>";
+        safelySetText('p-label-exkl', "Total Kostnad exkl. moms:");
     } else {
-        const labelExkl = document.querySelector('td[id="p-total-exkl"]')?.previousElementSibling;
-        if (labelExkl) labelExkl.innerHTML = "<strong>Slutbalans/Netto exkl. moms:</strong>";
+        safelySetText('p-label-exkl', "Slutbalans/Netto exkl. moms:");
     }
 
     const moms = finalNetto * 0.25;
@@ -601,24 +601,30 @@ function saveCurrentContractToHistory() {
     const fastighet = document.getElementById('kund-fastighet')?.value || "Okänd fastighet";
     const date = document.getElementById('kund-datum')?.value || "-";
     
-    const historyData = JSON.parse(localStorage.getItem('fieldpro_history') || '[]');
-    historyData.push({ name, fastighet, date, cartCount: cart.length });
-    localStorage.setItem('fieldpro_history', JSON.stringify(historyData));
-    loadHistory();
-    alert("Avtalet har arkiverats offline på enheten!");
+    try {
+        const historyData = JSON.parse(localStorage.getItem('fieldpro_history') || '[]');
+        historyData.push({ name, fastighet, date, cartCount: cart.length });
+        localStorage.setItem('fieldpro_history', JSON.stringify(historyData));
+        loadHistory();
+        alert("Avtalet har arkiverats offline på enheten!");
+    } catch(e) {
+        console.error("Kunde inte spara historik:", e);
+    }
 }
 
 function loadHistory() {
-    const historyData = JSON.parse(localStorage.getItem('fieldpro_history') || '[]');
-    const container = document.getElementById('history-list-container');
-    if(!container) return;
-    
-    if(historyData.length === 0) {
-        container.innerText = "Inga historiska kontrakt sparade lokalt.";
-        return;
-    }
-    container.innerHTML = historyData.map(h => `<div class="history-item">
-        <div>📁 <strong>${h.name}</strong> - ${h.fastighet} (${h.date})</div>
-        <div style="font-size:0.8rem; background:#1e3f20; color:white; padding:2px 6px; border-radius:4px;">${h.cartCount} åtgärder</div>
-    </div>`).join('');
+    try {
+        const historyData = JSON.parse(localStorage.getItem('fieldpro_history') || '[]');
+        const container = document.getElementById('history-list-container');
+        if(!container) return;
+        
+        if(historyData.length === 0) {
+            container.innerText = "Inga historiska kontrakt sparade lokalt.";
+            return;
+        }
+        container.innerHTML = historyData.map(h => `<div class="history-item">
+            <div>📁 <strong>${h.name}</strong> - ${h.fastighet} (${h.date})</div>
+            <div style="font-size:0.8rem; background:#1e3f20; color:white; padding:2px 6px; border-radius:4px;">${h.cartCount} åtgärder</div>
+        </div>`).join('');
+    } catch(e) {}
 }
