@@ -412,7 +412,7 @@ function clearSignature() {
     if(ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
-// --- FULLSTÄNDIGT SÄKRAD GENERERING AV OFFERT ---
+// --- SKOTTSÄKER GENERERING AV OFFERT ---
 function generateOffer() {
     if(cart.length === 0) {
         alert("Lägg till minst en åtgärd i din kalkyl innan du skapar en offert.");
@@ -442,7 +442,7 @@ function generateOffer() {
     const tbody = document.getElementById('p-tbody');
     
     tbody.innerHTML = cart.map(item => {
-        // Tvinga absolut positivt tal DIREKT vid hämtning från arrayen
+        // Garantera att vi arbetar med ett absolut positivt tal (inget dolt minustecken från systemet)
         const rawAmount = Math.abs(Number(item.amount)); 
         const isExpense = (item.type === 'Röjning' || item.type === 'Plantering');
         
@@ -452,7 +452,7 @@ function generateOffer() {
             nettoSum += rawAmount;
         }
         
-        // Skapa prefix strängt baserat på typ - ALDRIG från det dolda matematiska talet
+        // Konstruera strängen helt manuellt
         const prefix = isExpense ? "-" : "+";
         const displayAmount = prefix + Math.round(rawAmount).toLocaleString('sv-SE') + " kr";
         
@@ -464,19 +464,17 @@ function generateOffer() {
         </tr>`;
     }).join('');
     
-    // Beräkna moms och slutsummor i helt isolerade, rena variabler
+    // Separera teckenhanteringen från själva valutaformateringen
     const absoluteNetto = Math.abs(nettoSum);
     const moms = nettoSum * 0.25;
     const absoluteMoms = Math.abs(moms);
     const totalInkl = nettoSum + moms;
     const absoluteInkl = Math.abs(totalInkl);
     
-    // Sätt tecken manuellt för slutsektionen
     const nettoPrefix = nettoSum < 0 ? "-" : "";
     const momsPrefix = moms < 0 ? "-" : "";
     const inklPrefix = totalInkl < 0 ? "-" : "";
     
-    // Injicera och formatera utan risk för dolda matematiska minustecken
     document.getElementById('p-total-exkl').innerText = nettoPrefix + Math.round(absoluteNetto).toLocaleString('sv-SE') + " kr";
     document.getElementById('p-moms').innerText = momsPrefix + Math.round(absoluteMoms).toLocaleString('sv-SE') + " kr";
     document.getElementById('p-total-inkl').innerText = inklPrefix + Math.round(absoluteInkl).toLocaleString('sv-SE') + " kr";
