@@ -1,4 +1,4 @@
-const CACHE_NAME = 'norrlands-skogsvard-enterprise-v9';
+const CACHE_NAME = 'norrlands-skogsvard-enterprise-v10';
 const assets = [
   './',
   './index.html',
