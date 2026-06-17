@@ -361,7 +361,6 @@ function updateCartUI() {
         
         const color = isExpense ? "red" : "green";
         
-        // Ta bort minustecken i kalkylvagnen om Kostnadsläget är aktivt
         let prefix = "";
         if (calcMode === "netto") {
             prefix = isExpense ? "-" : "+";
@@ -375,7 +374,7 @@ function updateCartUI() {
     }).join('');
     
     let displayText = "";
-    if (calcMode === "kostnad") {
+    if (calcMode === "costnad") {
         displayText = `Offert Kostnad (exkl. moms): ${Math.round(Math.abs(total)).toLocaleString('sv-SE')} kr`;
     } else {
         displayText = `Balans/Totalt exkl. moms: ${Math.round(total).toLocaleString('sv-SE')} kr`;
@@ -470,7 +469,7 @@ function initSignaturePad() {
         const rect = canvas.getBoundingClientRect();
         return {
             x: (e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0)) - rect.left,
-            y: (e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientX : 0)) - rect.top
+            y: (e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0)) - rect.top
         };
     }
     
@@ -542,7 +541,7 @@ function generateOffer() {
             nettoSum += rawAmount;
         }
         
-        // HÄR SNYGGAR VI TILL RADERNA: Om läget är 'kostnad' döljs minustecknet helt
+        // KORRIGERING HÄR: Tvingar bort minustecknet helt och hållet även under loopen på offerttabellen!
         let prefix = "";
         if (calcMode === "netto") {
             prefix = isExpense ? "-" : "+";
@@ -562,7 +561,7 @@ function generateOffer() {
     
     let finalNetto = nettoSum;
     if (calcMode === "kostnad") {
-        finalNetto = Math.abs(nettoSum); // Tvinga positivt belopp för slutsumman
+        finalNetto = Math.abs(nettoSum); 
         safelySetText('p-label-exkl', "Total Kostnad exkl. moms:");
     } else {
         safelySetText('p-label-exkl', "Slutbalans/Netto exkl. moms:");
