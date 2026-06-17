@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fieldpro-enterprise-v110';
+const CACHE_NAME = 'fieldpro-enterprise-v120';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
