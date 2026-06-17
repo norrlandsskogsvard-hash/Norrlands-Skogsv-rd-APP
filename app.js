@@ -20,7 +20,10 @@ const priceLists = {
 let canvas, ctx, isDrawing = false;
 
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('kund-datum').value = new Date().toISOString().split('T')[0];
+    // Sätt dagens datum som standard
+    const dateInput = document.getElementById('kund-datum');
+    if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+    
     initMap();
     initSignaturePad();
     loadSavedLogo();
@@ -35,12 +38,23 @@ document.addEventListener('DOMContentLoaded', () => {
 function switchTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
-    document.getElementById(tabId).classList.add('active');
-    if(event && event.currentTarget) {
+    
+    const targetTab = document.getElementById(tabId);
+    if (targetTab) targetTab.classList.add('active');
+    
+    if(event && event.currentTarget && event.currentTarget.tagName === 'BUTTON') {
         event.currentTarget.classList.add('active');
     }
     if(tabId === 'tab-kund' && map) {
         setTimeout(() => map.invalidateSize(), 200);
+    }
+}
+
+// Helper-funktion för att säkert sätta text utan att krascha om ID saknas i HTML
+function safelySetText(id, value) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.innerText = value;
     }
 }
 
@@ -55,7 +69,7 @@ function getGPS() {
         return;
     }
 
-    fastighetInput.value = "Hämtar position från satellit...";
+    if (fastighetInput) fastighetInput.value = "Hämtar position från satellit...";
 
     const options = {
         enableHighAccuracy: true,
@@ -68,10 +82,10 @@ function getGPS() {
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
             
-            gpsInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+            if (gpsInput) gpsInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
             
             const sweref = convertToSweref99TM(lat, lng);
-            swerefInput.value = `N: ${sweref.N}, E: ${sweref.E}`;
+            if (swerefInput) swerefInput.value = `N: ${sweref.N}, E: ${sweref.E}`;
             
             if (map) {
                 map.setView([lat, lng], 16);
@@ -80,21 +94,23 @@ function getGPS() {
                 } else {
                     marker = L.marker([lat, lng], { draggable: true }).addTo(map);
                 }
-                fastighetInput.value = `Skifte vid Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+                if (fastighetInput && fastighetInput.value.includes("Hämtar")) {
+                    fastighetInput.value = "Position lokaliserad. Ange fastighetsbeteckning.";
+                }
             }
         },
         (error) => {
             console.error(error);
-            fastighetInput.value = "";
+            if (fastighetInput) fastighetInput.value = "";
             switch(error.code) {
                 case error.PERMISSION_DENIED:
                     alert("Du måste godkänna platstjänster i webbläsaren för att spåra skiftet.");
                     break;
                 case error.TIMEOUT:
-                    alert("Tog för lång tid att hämta GPS. Försök igen.");
+                    alert("Tog för lång tid att hämta GPS. Försök igen eller stå utomhus.");
                     break;
                 default:
-                    alert("Ett internt GPS-fel uppstod.");
+                    alert("Ett internt GPS-fel uppstod vid fältetablering.");
                     break;
             }
         },
@@ -103,6 +119,9 @@ function getGPS() {
 }
 
 function initMap() {
+    const mapEl = document.getElementById('map');
+    if (!mapEl) return;
+    
     map = L.map('map').setView([62.6, 16.5], 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap'
@@ -111,9 +130,13 @@ function initMap() {
     map.on('click', (e) => {
         const lat = e.latlng.lat;
         const lng = e.latlng.lng;
-        document.getElementById('kund-gps').value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        
+        const gpsInput = document.getElementById('kund-gps');
+        const swerefInput = document.getElementById('kund-sweref');
+        
+        if (gpsInput) gpsInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
         const sweref = convertToSweref99TM(lat, lng);
-        document.getElementById('kund-sweref').value = `N: ${sweref.N}, E: ${sweref.E}`;
+        if (swerefInput) swerefInput.value = `N: ${sweref.N}, E: ${sweref.E}`;
         
         if (marker) {
             marker.setLatLng(e.latlng);
@@ -135,32 +158,42 @@ function setActiveSpecies(species) {
     activeSpecies = species;
     document.querySelectorAll('.species-btn').forEach(b => b.classList.remove('active-tall', 'active-gran', 'active-lov'));
     const btn = document.getElementById(`s-btn-${species}`);
-    if(species === 'Tall') btn.classList.add('active-tall');
-    if(species === 'Gran') btn.classList.add('active-gran');
-    if(species === 'Lov') btn.classList.add('active-lov');
+    if (btn) {
+        if(species === 'Tall') btn.classList.add('active-tall');
+        if(species === 'Gran') btn.classList.add('active-gran');
+        if(species === 'Lov') btn.classList.add('active-lov');
+    }
 }
 
 function setFieldVal(type, val) {
-    document.getElementById(`field-${type}`).value = val;
+    const el = document.getElementById(`field-${type}`);
+    if (el) el.value = val;
 }
 
 function addHalfVal(type) {
     const el = document.getElementById(`field-${type}`);
-    el.value = (parseFloat(el.value) || 0) + 0.5;
+    if (el) el.value = (parseFloat(el.value) || 0) + 0.5;
 }
 
 function addTreeRecord() {
-    const d = parseFloat(document.getElementById('field-d').value) || 0;
-    const h = parseFloat(document.getElementById('field-h').value) || 0;
+    const dInput = document.getElementById('field-d');
+    const hInput = document.getElementById('field-h');
+    
+    const d = dInput ? (parseFloat(dInput.value) || 0) : 0;
+    const h = hInput ? (parseFloat(hInput.value) || 0) : 0;
+    
     registeredTrees.push({ species: activeSpecies, d, h });
     
     const display = document.getElementById('tree-list-display');
-    display.innerHTML = registeredTrees.map((t, idx) => `#${idx+1}: [${t.species}] d:${t.d}cm h:${t.h}m`).join('<br>');
+    if (display) {
+        display.innerHTML = registeredTrees.map((t, idx) => `#${idx+1}: [${t.species}] d:${t.d}cm h:${t.h}m`).join('<br>');
+    }
 }
 
 function clearTreeRecords() {
     registeredTrees = [];
-    document.getElementById('tree-list-display').innerText = "Inga stammar registrerade än.";
+    const display = document.getElementById('tree-list-display');
+    if (display) display.innerText = "Inga stammar registrerade än.";
 }
 
 function calculateFieldMetrics() {
@@ -179,42 +212,48 @@ function calculateFieldMetrics() {
     computedDgv = sumG > 0 ? sumGD / sumG : 0;
     computedHm = sumH / registeredTrees.length;
     
-    const radius = parseFloat(document.getElementById('field-radius').value);
-    const factor = 10000 / (Math.PI * Math.pow(radius, 2));
+    const radiusInput = document.getElementById('field-radius');
+    const radius = radiusInput ? (parseFloat(radiusInput.value) || 0) : 0;
+    const factor = radius > 0 ? (10000 / (Math.PI * Math.pow(radius, 2))) : 0;
     computedStemHa = Math.round(registeredTrees.length * factor);
     
-    document.getElementById('res-dgv').innerText = computedDgv.toFixed(1);
-    document.getElementById('res-hm').innerText = computedHm.toFixed(1);
-    document.getElementById('res-stem-ha').innerText = computedStemHa;
+    safelySetText('res-dgv', computedDgv.toFixed(1));
+    safelySetText('res-hm', computedHm.toFixed(1));
+    safelySetText('res-stem-ha', computedStemHa);
 }
 
 function transferMetricsToGallring() {
-    document.getElementById('gal-d').value = computedDgv.toFixed(1);
-    document.getElementById('gal-hojd').value = computedHm.toFixed(1);
+    const galD = document.getElementById('gal-d');
+    const galHojd = document.getElementById('gal-hojd');
+    if (galD) galD.value = computedDgv.toFixed(1);
+    if (galHojd) galHojd.value = computedHm.toFixed(1);
     switchTab('tab-gallring');
     runLivePrognosis();
 }
 
 // --- Kalkyl & Gallringsfunktioner ---
 function updateTimmerLabels() {
-    const tPct = parseInt(document.getElementById('gal-timmer-pct').value);
-    document.getElementById('lbl-timmer-pct').innerText = tPct + '%';
-    document.getElementById('lbl-massa-pct').innerText = (100 - tPct) + '%';
+    const pctInput = document.getElementById('gal-timmer-pct');
+    const tPct = pctInput ? parseInt(pctInput.value) : 0;
+    safelySetText('lbl-timmer-pct', tPct + '%');
+    safelySetText('lbl-massa-pct', (100 - tPct) + '%');
     runLivePrognosis();
 }
 
 function runLivePrognosis() {
-    const areal = parseFloat(document.getElementById('gal-areal').value) || 0;
-    const gy = parseFloat(document.getElementById('gal-gy').value) || 0;
-    const hojd = parseFloat(document.getElementById('gal-hojd').value) || 0;
-    const uttag = parseFloat(document.getElementById('gal-uttag').value) || 0;
-    const tPct = parseInt(document.getElementById('gal-timmer-pct').value) || 0;
+    const getValue = (id) => parseFloat(document.getElementById(id)?.value) || 0;
     
-    const pTimmer = parseFloat(document.getElementById('cfg-pris-timmer').value) || 0;
-    const pMassa = parseFloat(document.getElementById('cfg-pris-massa').value) || 0;
+    const areal = getValue('gal-areal');
+    const gy = getValue('gal-gy');
+    const hojd = getValue('gal-hojd');
+    const uttag = getValue('gal-uttag');
+    const tPct = parseInt(document.getElementById('gal-timmer-pct')?.value) || 0;
+    
+    const pTimmer = getValue('cfg-pris-timmer');
+    const pMassa = getValue('cfg-pris-massa');
     
     let f = 0.45;
-    const species = document.getElementById('gal-tradslag').value;
+    const species = document.getElementById('gal-tradslag')?.value;
     if(species === 'Gran') f = 0.50;
     if(species === 'Tall') f = 0.44;
     
@@ -223,41 +262,48 @@ function runLivePrognosis() {
     const vTimmer = outVol * (tPct / 100);
     const vMassa = outVol * ((100 - tPct) / 100);
     
-    const bearing = document.getElementById('gal-bearing').value;
+    const bearing = document.getElementById('gal-bearing')?.value;
     const alertBox = document.getElementById('terrain-alert');
-    if(bearing === 'Låg') {
-        alertBox.style.display = 'block';
-        alertBox.innerText = "⚠️ OBS: Svag bärighet. Körskaderisk identifierad! Kräver risning eller vinteravverkning.";
-    } else {
-        alertBox.style.display = 'none';
+    if(alertBox) {
+        if(bearing === 'Låg') {
+            alertBox.style.display = 'block';
+            alertBox.innerText = "⚠️ OBS: Svag bärighet. Körskaderisk identifierad! Kräver risning eller vinteravverkning.";
+        } else {
+            alertBox.style.display = 'none';
+        }
     }
     
     const netto = (vTimmer * pTimmer) + (vMassa * pMassa);
     
-    document.getElementById('prog-tot-vol').innerText = Math.round(totVol);
-    document.getElementById('prog-out-vol').innerText = Math.round(outVol);
-    document.getElementById('prog-out-timmer').innerText = Math.round(vTimmer);
-    document.getElementById('prog-out-massa').innerText = Math.round(vMassa);
-    document.getElementById('prog-netto').innerText = Math.round(netto).toLocaleString('sv-SE');
+    safelySetText('prog-tot-vol', Math.round(totVol));
+    safelySetText('prog-out-vol', Math.round(outVol));
+    safelySetText('prog-out-timmer', Math.round(vTimmer));
+    safelySetText('prog-out-massa', Math.round(vMassa));
+    safelySetText('prog-netto', Math.round(netto).toLocaleString('sv-SE'));
     
     return { totVol, outVol, vTimmer, vMassa, netto };
 }
 
 function syncCompanyPrices(key) {
     if(priceLists[key]) {
-        document.getElementById('gal-company-sync').value = key;
-        document.getElementById('cfg-skogsbolag').value = key;
-        document.getElementById('cfg-pris-timmer').value = priceLists[key].timmer;
-        document.getElementById('cfg-pris-massa').value = priceLists[key].massa;
+        const compSync = document.getElementById('gal-company-sync');
+        const cfgSkogs = document.getElementById('cfg-skogsbolag');
+        const cfgTimmer = document.getElementById('cfg-pris-timmer');
+        const cfgMassa = document.getElementById('cfg-pris-massa');
+        
+        if (compSync) compSync.value = key;
+        if (cfgSkogs) cfgSkogs.value = key;
+        if (cfgTimmer) cfgTimmer.value = priceLists[key].timmer;
+        if (cfgMassa) cfgMassa.value = priceLists[key].massa;
         runLivePrognosis();
     }
 }
 
 // --- Kalkylvagnshantering (Cart) ---
 function addRojningToCart() {
-    const ar = parseFloat(document.getElementById('roj-areal').value) || 0;
-    const h = document.getElementById('roj-hojd').value;
-    const p = parseFloat(document.getElementById('cfg-roj-timme').value) || 0;
+    const ar = parseFloat(document.getElementById('roj-areal')?.value) || 0;
+    const h = document.getElementById('roj-hojd')?.value || "0";
+    const p = parseFloat(document.getElementById('cfg-roj-timme')?.value) || 0;
     const cost = ar * 8 * p;
     
     cart.push({ type: 'Röjning', desc: `Ungskogsröjning, medelhöjd ${h}m`, area: ar, rate: `${p} kr/h (Est. 8h/ha)`, amount: Math.abs(cost) });
@@ -266,18 +312,18 @@ function addRojningToCart() {
 
 function addGallringToCart() {
     const data = runLivePrognosis();
-    const ar = parseFloat(document.getElementById('gal-areal').value) || 0;
-    const sp = document.getElementById('gal-tradslag').value;
+    const ar = parseFloat(document.getElementById('gal-areal')?.value) || 0;
+    const sp = document.getElementById('gal-tradslag')?.value || "Tall";
     cart.push({ type: 'Gallring', desc: `Avverkning/Gallring (${sp}) - Uttag på ${Math.round(data.outVol)} m³fub`, area: ar, rate: 'Virkesnetto', amount: Math.abs(data.netto) });
     updateCartUI();
 }
 
 function addPlanteringToCart() {
-    const ar = parseFloat(document.getElementById('plan-areal').value) || 0;
-    const t = parseInt(document.getElementById('plan-tathet').value) || 0;
-    const pPlanta = parseFloat(document.getElementById('cfg-planta').value) || 0;
-    const incMb = document.getElementById('plan-mb').checked;
-    const cMb = parseFloat(document.getElementById('cfg-mb-ha').value) || 0;
+    const ar = parseFloat(document.getElementById('plan-areal')?.value) || 0;
+    const t = parseInt(document.getElementById('plan-tathet')?.value) || 0;
+    const pPlanta = parseFloat(document.getElementById('cfg-planta')?.value) || 0;
+    const incMb = document.getElementById('plan-mb')?.checked;
+    const cMb = parseFloat(document.getElementById('cfg-mb-ha')?.value) || 0;
     
     let cost = ar * t * pPlanta;
     let desc = `Plantering (${t} st/ha, á ${pPlanta}kr)`;
@@ -291,15 +337,20 @@ function addPlanteringToCart() {
 }
 
 function updateCartUI() {
-    document.getElementById('cart-count').innerText = cart.length;
+    safelySetText('cart-count', cart.length);
     const container = document.getElementById('cart-items-container');
+    if(!container) return;
+    
     if(cart.length === 0) {
         container.innerText = "Kalkylen är tom.";
-        document.getElementById('cart-total').innerText = "Totalt exkl. moms: 0 kr";
+        safelySetText('cart-total', "Totalt exkl. moms: 0 kr");
         return;
     }
     
     let total = 0;
+    // Kontrollera om användaren valt att visa som ren Kostnadsredovisning (utan minus)
+    const calcMode = document.getElementById('calc-mode')?.value || "netto";
+    
     container.innerHTML = cart.map((item, idx) => {
         const rawAmount = Math.abs(item.amount); 
         const isExpense = (item.type === 'Röjning' || item.type === 'Plantering');
@@ -320,9 +371,16 @@ function updateCartUI() {
         </div>`;
     }).join('');
     
-    // RÄTTAT HÄR: JavaScripts toLocaleString lägger till minustecken själv om total är negativt. 
-    // Vi lägger inte till något manuellt minus här för att slippa dubbla tecken.
-    document.getElementById('cart-total').innerText = `Balans/Totalt exkl. moms: ${Math.round(total).toLocaleString('sv-SE')} kr`;
+    // Formatera slutsumman strängt utifrån önskat gränssnittsläge
+    let displayText = "";
+    if (calcMode === "kostnad") {
+        displayText = `Offert Kostnad (exkl. moms): ${Math.round(Math.abs(total)).toLocaleString('sv-SE')} kr`;
+    } else {
+        displayText = `Balans/Totalt exkl. moms: ${Math.round(total).toLocaleString('sv-SE')} kr`;
+    }
+    
+    const totalBox = document.getElementById('cart-total');
+    if (totalBox) totalBox.innerText = displayText;
 }
 
 function removeItem(idx) {
@@ -337,11 +395,14 @@ function clearCart() {
 
 // --- Kartmärken & Avvikelser ---
 function addFieldNote() {
-    const type = document.getElementById('note-type').value;
-    const coords = document.getElementById('kund-gps').value || "Ej spec.";
+    const type = document.getElementById('note-type')?.value || "Övrigt";
+    const coords = document.getElementById('kund-gps')?.value || "Ej spec.";
     fieldNotes.push({ type, coords });
     
-    document.getElementById('saved-notes-display').innerHTML = fieldNotes.map(n => `📍 <strong>${n.type}</strong> (${n.coords})`).join('<br>');
+    const display = document.getElementById('saved-notes-display');
+    if (display) {
+        display.innerHTML = fieldNotes.map(n => `📍 <strong>${n.type}</strong> (${n.coords})`).join('<br>');
+    }
 }
 
 // --- Logohantering & Lokallagring ---
@@ -359,21 +420,30 @@ function handleLogoUpload(input) {
 
 function showLogoPreview() {
     const preview = document.getElementById('logo-preview');
-    preview.src = savedLogoDataUrl;
-    preview.style.display = 'block';
-    document.getElementById('btn-clear-logo').style.display = 'inline-block';
+    if (preview) {
+        preview.src = savedLogoDataUrl;
+        preview.style.display = 'block';
+    }
+    const btn = document.getElementById('btn-clear-logo');
+    if (btn) btn.style.display = 'inline-block';
 }
 
 function clearSavedLogo() {
     savedLogoDataUrl = "";
     localStorage.removeItem('fieldpro_user_logo');
-    document.getElementById('logo-preview').style.display = 'none';
-    document.getElementById('btn-clear-logo').style.display = 'none';
-    document.getElementById('logo-uploader').value = "";
+    
+    const preview = document.getElementById('logo-preview');
+    if (preview) preview.style.display = 'none';
+    
+    const btn = document.getElementById('btn-clear-logo');
+    if (btn) btn.style.display = 'none';
+    
+    const uploader = document.getElementById('logo-uploader');
+    if (uploader) uploader.value = "";
 }
 
 function loadSavedLogo() {
-    const stored = localStorage.getItem('fieldpro_user_logo');
+    const stored = localStorage.setItem ? localStorage.getItem('fieldpro_user_logo') : null;
     if(stored) {
         savedLogoDataUrl = stored;
         showLogoPreview();
@@ -383,13 +453,14 @@ function loadSavedLogo() {
 // --- Digital Signatur ---
 function initSignaturePad() {
     canvas = document.getElementById('sig-pad');
+    if (!canvas) return;
     ctx = canvas.getContext('2d');
     
     function getPos(e) {
         const rect = canvas.getBoundingClientRect();
         return {
-            x: (e.clientX || e.touches[0].clientX) - rect.left,
-            y: (e.clientY || e.touches[0].clientY) - rect.top
+            x: (e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0)) - rect.left,
+            y: (e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0)) - rect.top
         };
     }
     
@@ -410,36 +481,49 @@ function clearSignature() {
     if(ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
-// --- GENERERING AV OFFERT ---
+// --- SKOTTSÄKER OCH KORRIGERAD GENERERING AV OFFERT ---
 function generateOffer() {
     if(cart.length === 0) {
         alert("Lägg till minst en åtgärd i din kalkyl innan du skapar en offert.");
         return;
     }
     
-    document.getElementById('p-doc-type').innerText = document.getElementById('doc-type').value.toUpperCase();
-    document.getElementById('p-datum').innerText = document.getElementById('kund-datum').value;
-    document.getElementById('p-uuid').innerText = Math.floor(100000 + Math.random() * 900000);
+    // Hämta värden säkert utan att riskera krasch om elementen saknas i HTML
+    const docTypeVal = document.getElementById('doc-type')?.value || "OFFERT";
+    const datumVal = document.getElementById('kund-datum')?.value || "-";
+    const namnVal = document.getElementById('kund-namn')?.value || "Ej angiven";
+    const idVal = document.getElementById('kund-id')?.value || "-";
+    const fastighetVal = document.getElementById('kund-fastighet')?.value || "-";
+    const ortVal = document.getElementById('kund-ort')?.value || "-";
+    const gpsVal = document.getElementById('kund-gps')?.value || "-";
+    const swerefVal = document.getElementById('kund-sweref')?.value || "-";
+    const calcMode = document.getElementById('calc-mode')?.value || "netto";
+
+    safelySetText('p-doc-type', docTypeVal.toUpperCase());
+    safelySetText('p-datum', datumVal);
+    safelySetText('p-uuid', Math.floor(100000 + Math.random() * 900000));
     
-    document.getElementById('p-kund-namn').innerText = document.getElementById('kund-namn').value || "Ej angiven";
-    document.getElementById('p-sign-name').innerText = document.getElementById('kund-namn').value || "Fastighetsägare";
-    document.getElementById('p-kund-id').innerText = document.getElementById('kund-id').value || "-";
-    document.getElementById('p-kund-fastighet').innerText = document.getElementById('kund-fastighet').value || "-";
-    document.getElementById('p-kund-ort').innerText = document.getElementById('kund-ort').value || "-";
-    document.getElementById('p-kund-gps').innerText = document.getElementById('kund-gps').value || "-";
-    document.getElementById('p-kund-sweref').innerText = document.getElementById('kund-sweref').value || "-";
+    safelySetText('p-kund-namn', namnVal);
+    safelySetText('p-sign-name', namnVal || "Fastighetsägare");
+    safelySetText('p-kund-id', idVal);
+    safelySetText('p-kund-fastighet', fastighetVal);
+    safelySetText('p-kund-ort', ortVal);
+    safelySetText('p-kund-gps', gpsVal);
+    safelySetText('p-kund-sweref', swerefVal);
     
     const wrapper = document.getElementById('p-logo-wrapper');
-    if(savedLogoDataUrl) {
-        wrapper.innerHTML = `<img src="${savedLogoDataUrl}" style="max-width:140px; max-height:70px; object-fit:contain;">`;
-    } else {
-        wrapper.innerHTML = `<div class="print-logo-placeholder">🌲</div>`;
+    if(wrapper) {
+        if(savedLogoDataUrl) {
+            wrapper.innerHTML = `<img src="${savedLogoDataUrl}" style="max-width:140px; max-height:70px; object-fit:contain;">`;
+        } else {
+            wrapper.innerHTML = `<div class="print-logo-placeholder">🌲</div>`;
+        }
     }
     
     let nettoSum = 0;
     const tbody = document.getElementById('p-tbody');
     
-    tbody.innerHTML = cart.map(item => {
+    const rowsHtml = cart.map(item => {
         const rawAmount = Math.abs(Number(item.amount)); 
         const isExpense = (item.type === 'Röjning' || item.type === 'Plantering');
         
@@ -460,40 +544,62 @@ function generateOffer() {
         </tr>`;
     }).join('');
     
-    const moms = nettoSum * 0.25;
-    const totalInkl = nettoSum + moms;
+    if (tbody) tbody.innerHTML = rowsHtml;
     
-    // RÄTTAT HÄR: Vi låter toLocaleString helt själv sköta minustecknen för slutsummorna 
-    // så att vi slipper de felaktiga dubbla minustecknen i utskriftsvyn!
-    document.getElementById('p-total-exkl').innerText = Math.round(nettoSum).toLocaleString('sv-SE') + " kr";
-    document.getElementById('p-moms').innerText = Math.round(moms).toLocaleString('sv-SE') + " kr";
-    document.getElementById('p-total-inkl').innerText = Math.round(totalInkl).toLocaleString('sv-SE') + " kr";
+    // Hantera visningsläge för totalsummeringen på utskriften
+    let finalNetto = nettoSum;
+    if (calcMode === "kostnad") {
+        // Tvinga positivt belopp vid en ren kostnadsredovisning
+        finalNetto = Math.abs(nettoSum);
+        const labelExkl = document.querySelector('td[id="p-total-exkl"]')?.previousElementSibling;
+        if (labelExkl) labelExkl.innerHTML = "<strong>Total Kostnad exkl. moms:</strong>";
+    } else {
+        const labelExkl = document.querySelector('td[id="p-total-exkl"]')?.previousElementSibling;
+        if (labelExkl) labelExkl.innerHTML = "<strong>Slutbalans/Netto exkl. moms:</strong>";
+    }
+
+    const moms = finalNetto * 0.25;
+    const totalInkl = finalNetto + moms;
+    
+    safelySetText('p-total-exkl', Math.round(finalNetto).toLocaleString('sv-SE') + " kr");
+    safelySetText('p-moms', Math.round(moms).toLocaleString('sv-SE') + " kr");
+    safelySetText('p-total-inkl', Math.round(totalInkl).toLocaleString('sv-SE') + " kr");
     
     const notesDiv = document.getElementById('p-field-notes');
-    if(fieldNotes.length > 0) {
-        notesDiv.innerHTML = fieldNotes.map(n => `⚠️ <strong>${n.type}</strong> (Position: ${n.coords})`).join('<br>');
-    } else {
-        notesDiv.innerText = "Inga registrerade miljö- eller terrängavvikelser för detta skifte.";
+    if(notesDiv) {
+        if(fieldNotes.length > 0) {
+            notesDiv.innerHTML = fieldNotes.map(n => `⚠️ <strong>${n.type}</strong> (Position: ${n.coords})`).join('<br>');
+        } else {
+            notesDiv.innerText = "Inga registrerade miljö- eller terrängavvikelser för detta skifte.";
+        }
     }
     
     const sigImg = document.getElementById('p-signature-img');
-    sigImg.src = canvas.toDataURL();
-    sigImg.style.display = 'block';
+    if(sigImg && canvas) {
+        try {
+            sigImg.src = canvas.toDataURL();
+            sigImg.style.display = 'block';
+        } catch(e) {
+            console.error("Kunde inte hämta signatur:", e);
+        }
+    }
     
     window.scrollTo(0,0);
-    document.getElementById('print-view').style.display = 'block';
+    const printView = document.getElementById('print-view');
+    if (printView) printView.style.display = 'block';
 }
 
 function exitPrintView() {
-    document.getElementById('print-view').style.display = 'none';
+    const printView = document.getElementById('print-view');
+    if (printView) printView.style.display = 'none';
     window.scrollTo(0,0);
 }
 
 // --- Historikhantering lokalt ---
 function saveCurrentContractToHistory() {
-    const name = document.getElementById('kund-namn').value || "Okänd kund";
-    const fastighet = document.getElementById('kund-fastighet').value || "Okänd fastighet";
-    const date = document.getElementById('kund-datum').value;
+    const name = document.getElementById('kund-namn')?.value || "Okänd kund";
+    const fastighet = document.getElementById('kund-fastighet')?.value || "Okänd fastighet";
+    const date = document.getElementById('kund-datum')?.value || "-";
     
     const historyData = JSON.parse(localStorage.getItem('fieldpro_history') || '[]');
     historyData.push({ name, fastighet, date, cartCount: cart.length });
@@ -505,6 +611,8 @@ function saveCurrentContractToHistory() {
 function loadHistory() {
     const historyData = JSON.parse(localStorage.getItem('fieldpro_history') || '[]');
     const container = document.getElementById('history-list-container');
+    if(!container) return;
+    
     if(historyData.length === 0) {
         container.innerText = "Inga historiska kontrakt sparade lokalt.";
         return;
