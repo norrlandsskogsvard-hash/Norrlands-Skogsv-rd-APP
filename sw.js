@@ -1,30 +1,24 @@
-const CACHE_NAME = 'skogskalkylator-cache-v1';
-const ASSETS_TO_CACHE = [
+const CACHE_NAME = 'skogskalkylator-v7.0-github';
+const ASSETS = [
   './',
   './index.html',
   './manifest.json'
 ];
 
-// Installera service worker och cacha kritiska filer
-self.addEventListener('install', event => {
+self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Cachar applikationsfiler');
-        return cache.addAll(ASSETS_TO_CACHE);
-      })
-      .then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(ASSETS);
+    }).then(() => self.skipWaiting())
   );
 });
 
-// Aktivera och rensa gamla cacher om koden uppdateras
-self.addEventListener('activate', event => {
+self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then(cacheNames => {
+    caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames.map(cache => {
+        cacheNames.map((cache) => {
           if (cache !== CACHE_NAME) {
-            console.log('Rensar gammal cache:', cache);
             return caches.delete(cache);
           }
         })
@@ -33,31 +27,20 @@ self.addEventListener('activate', event => {
   );
 });
 
-// "Network first, fallback to cache"-strategi för smidig offline-drift
-self.addEventListener('fetch', event => {
+self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request)
-      .then(response => {
-        // Om nätverket fungerar, klona svaret till cachen
-        if (response && response.status === 200) {
-          const responseCopy = response.clone();
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, responseCopy);
+      .then((response) => {
+        if (response && response.status === 200 && response.type === 'basic') {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
           });
         }
         return response;
       })
       .catch(() => {
-        // Om nätverket ligger nere (t.ex. ute på hygget), hämta från cachen
-        return caches.match(event.request).then(cachedResponse => {
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          // Om det inte finns i cachen och nätverk saknas
-          if (event.request.mode === 'navigate') {
-            return caches.match('./index.html');
-          }
-        });
+        return caches.match(event.request);
       })
   );
 });
