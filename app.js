@@ -36,8 +36,11 @@ function switchTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
-    if(event && event.currentTarget) {
-        event.currentTarget.classList.add('active');
+    
+    // Felsäkring för event-objektet i switchTab
+    const currentEvent = window.event;
+    if(currentEvent && currentEvent.currentTarget) {
+        currentEvent.currentTarget.classList.add('active');
     }
     if(tabId === 'tab-kund' && map) {
         setTimeout(() => map.invalidateSize(), 200);
@@ -262,7 +265,6 @@ function addRojningToCart() {
     const ar = parseFloat(document.getElementById('roj-areal').value) || 0;
     const h = document.getElementById('roj-hojd').value;
     const p = parseFloat(document.getElementById('cfg-roj-timme').value) || 0;
-    // Estimering: Det tar cirka 8 timmar per hektar i normalskog
     const cost = ar * 8 * p;
     
     cart.push({ type: 'Röjning', desc: `Ungskogsröjning, medelhöjd ${h}m`, area: ar, rate: `${p} kr/h (Est. 8h/ha)`, amount: -cost });
@@ -308,14 +310,21 @@ function updateCartUI() {
     container.innerHTML = cart.map((item, idx) => {
         total += item.amount;
         const color = item.amount >= 0 ? "green" : "red";
+        const displayAmount = Math.round(Math.abs(item.amount)).toLocaleString('sv-SE') + " kr";
+        const prefix = item.amount >= 0 ? "+" : "-";
+        
         return `<div class="cart-item">
             <div><strong>${item.type}</strong> - ${item.desc} (${item.area} ha)</div>
-            <div style="color:${color}; font-weight:bold;">${Math.round(item.amount).toLocaleString('sv-SE')} kr 
+            <div style="color:${color}; font-weight:bold;">${prefix}${displayAmount} 
             <button class="btn btn-danger" style="width:auto; padding:2px 6px; font-size:0.75rem; margin-left:10px;" onclick="removeItem(${idx})">X</button></div>
         </div>`;
     }).join('');
     
-    document.getElementById('cart-total').innerText = `Balans/Totalt exkl. moms: ${Math.round(total).toLocaleString('sv-SE')} kr`;
+    if (total >= 0) {
+        document.getElementById('cart-total').innerText = `Nettoöverskott (utbetalas exkl. moms): ${Math.round(total).toLocaleString('sv-SE')} kr`;
+    } else {
+        document.getElementById('cart-total').innerText = `Nettokostnad (att betala exkl. moms): ${Math.round(Math.abs(total)).toLocaleString('sv-SE')} kr`;
+    }
 }
 
 function removeItem(idx) {
@@ -365,14 +374,6 @@ function clearSavedLogo() {
     document.getElementById('logo-uploader').value = "";
 }
 
-function loadSavedLogo() {
-    const stored = localStorage.getItem('fieldpro_user_logo');
-    if(stored) {
-        savedLogoDataUrl = stored;
-        showLogoPreview();
-    }
-}
-
 // --- Digital Signatur Logik ---
 function initSignaturePad() {
     canvas = document.getElementById('sig-pad');
@@ -403,6 +404,14 @@ function clearSignature() {
     if(ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
+function loadSavedLogo() {
+    const stored = localStorage.getItem('fieldpro_user_logo');
+    if(stored) {
+        savedLogoDataUrl = stored;
+        showLogoPreview();
+    }
+}
+
 // --- Generera Offert / Avtal För Utskrift ---
 function generateOffer() {
     if(cart.length === 0) {
@@ -410,7 +419,6 @@ function generateOffer() {
         return;
     }
     
-    // Synka fältdata
     document.getElementById('p-doc-type').innerText = document.getElementById('doc-type').value.toUpperCase();
     document.getElementById('p-datum').innerText = document.getElementById('kund-datum').value;
     document.getElementById('p-uuid').innerText = Math.floor(100000 + Math.random() * 900000);
@@ -423,7 +431,6 @@ function generateOffer() {
     document.getElementById('p-kund-gps').innerText = document.getElementById('kund-gps').value || "-";
     document.getElementById('p-kund-sweref').innerText = document.getElementById('kund-sweref').value || "-";
     
-    // Logga i utskrift
     const wrapper = document.getElementById('p-logo-wrapper');
     if(savedLogoDataUrl) {
         wrapper.innerHTML = `<img src="${savedLogoDataUrl}" style="max-width:140px; max-height:70px; object-fit:contain;">`;
@@ -436,24 +443,40 @@ function generateOffer() {
     const tbody = document.getElementById('p-tbody');
     tbody.innerHTML = cart.map(item => {
         nettoSum += item.amount;
-        const displayAmount = Math.round(item.amount).toLocaleString('sv-SE') + " kr";
+        const displayAmount = Math.round(Math.abs(item.amount)).toLocaleString('sv-SE') + " kr";
+        const prefix = item.amount >= 0 ? "" : "-";
         return `<tr>
             <td><strong>${item.type}</strong><br><span style="font-size:9pt; color:#444;">${item.desc}</span></td>
             <td style="text-align:right;">${item.area} ha</td>
             <td style="text-align:right;">${item.rate}</td>
-            <td style="text-align:right; font-weight:bold;">${displayAmount}</td>
+            <td style="text-align:right; font-weight:bold;">${prefix}${displayAmount}</td>
         </tr>`;
     }).join('');
     
-    // Slutbelopp m.m.
-    const moms = nettoSum * 0.25;
-    const totalInkl = nettoSum + moms;
+    // RÄTTNING: Logik för positiva belopp samt dynamiska textetiketter i utskriften
+    const absoluteNetto = Math.abs(nettoSum);
+    const moms = absoluteNetto * 0.25;
+    const totalInkl = absoluteNetto + moms;
     
-    document.getElementById('p-total-exkl').innerText = Math.round(nettoSum).toLocaleString('sv-SE') + " kr";
-    document.getElementById('p-moms').innerText = Math.round(moms).toLocaleString('sv-SE') + " kr";
-    document.getElementById('p-total-inkl').innerText = Math.round(totalInkl).toLocaleString('sv-SE') + " kr";
+    const labelExkl = nettoSum >= 0 ? "Nettoöverskott exkl. moms:" : "Nettokostnad exkl. moms:";
+    const labelInkl = nettoSum >= 0 ? "Slutbelopp (utbetalas inkl. moms):" : "Slutbelopp (att betala inkl. moms):";
     
-    // Avvikelser instruktioner
+    const totalsContainer = document.querySelector('.print-totals');
+    totalsContainer.innerHTML = `
+        <div class="print-totals-row">
+          <span>${labelExkl}</span>
+          <span style="font-weight:bold;">${Math.round(absoluteNetto).toLocaleString('sv-SE')} kr</span>
+        </div>
+        <div class="print-totals-row" style="color:#555; font-size:10pt;">
+          <span>Mervärdesskatt (25%):</span>
+          <span>${Math.round(moms).toLocaleString('sv-SE')} kr</span>
+        </div>
+        <div class="print-totals-row grand-total">
+          <span>${labelInkl}</span>
+          <span>${Math.round(totalInkl).toLocaleString('sv-SE')} kr</span>
+        </div>
+    `;
+    
     const notesDiv = document.getElementById('p-field-notes');
     if(fieldNotes.length > 0) {
         notesDiv.innerHTML = fieldNotes.map(n => `⚠️ <strong>${n.type}</strong> (Position: ${n.coords})`).join('<br>');
@@ -461,12 +484,10 @@ function generateOffer() {
         notesDiv.innerText = "Inga registrerade miljö- eller terrängavvikelser för detta skifte.";
     }
     
-    // Överför namnteckning från ritplattan till en bild i utskriften
     const sigImg = document.getElementById('p-signature-img');
     sigImg.src = canvas.toDataURL();
     sigImg.style.display = 'block';
     
-    // Växla vy
     window.scrollTo(0,0);
     document.getElementById('print-view').style.display = 'block';
 }
