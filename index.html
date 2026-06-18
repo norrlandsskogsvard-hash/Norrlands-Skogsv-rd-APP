@@ -810,6 +810,159 @@ function sendRelToGallring() {
     saveSettings();
     alert("Grundyta överförd till gallringsfliken!");
 }
+
+// --- KÖRJOURNAL LOGIK (LOKAL LAGRING & EXPORT) ---
+let korjournal = JSON.parse(localStorage.getItem('skogskalkyl_korjournal') || '[]');
+
+
+// GPS Positionerings-funktion för Skatteverkets körjournal
+function getGpsLocation(fieldId) {
+    const inputElement = document.getElementById(fieldId);
+    if (!navigator.geolocation) {
+        alert("Tyvärr stöder inte din webbläsare eller enhet GPS-positionering.");
+        return;
+    }
+    
+    inputElement.value = "Hämtar GPS-koordinater...";
+    
+    navigator.geolocation.getCurrentPosition(
+        async (position) => {
+            const lat = position.coords.latitude.toFixed(5);
+            const lon = position.coords.longitude.toFixed(5);
+            
+            try {
+                // Försök hämta riktigt ortnamn via OpenStreetMap (gratis reverse geocoding utan nyckel)
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`, {
+                    headers: { 'Accept-Language': 'sv' }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    const address = data.display_name || "";
+                    // Förkorta adressen något så den ryms bra
+                    const shortAddress = address.split(',').slice(0, 3).join(',').trim();
+                    inputElement.value = shortAddress || `${lat}, ${lon}`;
+                } else {
+                    inputElement.value = `${lat}, ${lon}`;
+                }
+            } catch (error) {
+                // Fallback till rena koordinater om nätverk saknas i skogen
+                inputElement.value = `${lat}, ${lon}`;
+            }
+        },
+        (error) => {
+            alert("Kunde inte hämta GPS-position. Kontrollera att du har gett appen behörighet till platstjänster.");
+            inputElement.value = "";
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+    );
+}
+
+function initKörjournal() {
+    document.getElementById('kj-datum').value = new Date().toISOString().split('T')[0];
+    renderKörjournalTable();
+}
+
+function calcKjKm() {
+    const start = parseFloat(document.getElementById('kj-start_km').value) || 0;
+    const slut = parseFloat(document.getElementById('kj-slut_km').value) || 0;
+    if (slut >= start && start > 0) {
+        document.getElementById('kj-distans').value = slut - start;
+    }
+}
+
+function addKörjournalRow(e) {
+    e.preventDefault();
+    const datum = document.getElementById('kj-datum').value;
+    const typ = document.getElementById('kj-typ').value;
+    const regnr = document.getElementById('kj-regnr').value.toUpperCase();
+    const fran = document.getElementById('kj-fran').value;
+    const till = document.getElementById('kj-till').value;
+    const startKm = document.getElementById('kj-start_km').value || '0';
+    const slutKm = document.getElementById('kj-slut_km').value || '0';
+    const distans = parseFloat(document.getElementById('kj-distans').value) || 0;
+    const syfte = document.getElementById('kj-syfte').value;
+
+    const nyResa = { id: Date.now(), datum, typ, regnr, fran, till, startKm, slutKm, distans, syfte };
+    korjournal.push(nyResa);
+    localStorage.setItem('skogskalkyl_korjournal', JSON.stringify(korjournal));
+    
+    // Rensa fält förutom datum
+    document.getElementById('kj-fran').value = '';
+    document.getElementById('kj-till').value = '';
+    document.getElementById('kj-start_km').value = slutKm; // Sätt nästa start till förra slut
+    document.getElementById('kj-slut_km').value = '';
+    document.getElementById('kj-distans').value = '';
+    document.getElementById('kj-syfte').value = '';
+    
+    renderKörjournalTable();
+}
+
+function deleteKjRow(id) {
+    if(confirm('Vill du radera denna resa?')) {
+        korjournal = korjournal.filter(r => r.id !== id);
+        localStorage.setItem('skogskalkyl_korjournal', JSON.stringify(korjournal));
+        renderKörjournalTable();
+    }
+}
+
+function clearKörjournal() {
+    if(confirm('Är du helt säker på att du vill rensa HELA körjournalen permanent?')) {
+        korjournal = [];
+        localStorage.setItem('skogskalkyl_korjournal', JSON.stringify(korjournal));
+        renderKörjournalTable();
+    }
+}
+
+function renderKörjournalTable() {
+    const tbody = document.getElementById('kj-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    
+    if (korjournal.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:15px; color:#777;">Inga resor registrerade ännu.</td></tr>`;
+        return;
+    }
+
+    korjournal.sort((a, b) => b.datum.localeCompare(a.datum)).forEach(r => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid #eee';
+        const badgeColor = r.typ === 'Tjänsteresa' ? '#2ecc71' : '#f39c12';
+        tr.innerHTML = `
+            <td style="padding:6px; white-space:nowrap;"><strong>${r.datum}</strong><br><span style="font-size:10px; background:${badgeColor}; color:white; padding:1px 4px; border-radius:3px;">${r.typ || 'Tjänst'}</span></td>
+            <td style="padding:6px; font-size:11px;">Från: ${r.fran}<br>Till: ${r.till}<br><span style="color:#7f8c8d;">Mätare: ${r.startKm} ➔ ${r.slutKm} km</span></td>
+            <td style="padding:6px; font-weight:bold; white-space:nowrap;">${r.distans} km</td>
+            <td style="padding:6px; color:#555; font-size:11px;">${r.syfte} ${r.regnr ? '<br><small style="color:#999;">Bil: '+r.regnr+'</small>' : ''}</td>
+            <td style="padding:6px; text-align:center;"><button type="button" onclick="deleteKjRow(${r.id})" style="background:none; border:none; color:#e74c3c; font-weight:bold; cursor:pointer; font-size:14px;">✕</button></td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function exportKörjournalToExcel() {
+    if (korjournal.length === 0) {
+        alert('Det finns inga registrerade resor att exportera.');
+        return;
+    }
+    
+    // Skapa CSV med BOM för korrekt hantering av ÅÄÖ i Excel
+    let csvContent = "\uFEFF";
+    csvContent += "Datum;Typ av resa;Reg.nr;Från-adress;Till-adress;Mätarställning Start;Mätarställning Slut;Distans (km);Ärende / Syfte / Kontaktperson\r\n";
+    
+    korjournal.sort((a, b) => a.datum.localeCompare(b.datum)).forEach(r => {
+        csvContent += `"${r.datum}";"${r.typ || 'Tjänsteresa'}";"${r.regnr || ''}";"${r.fran}";"${r.till}";"${r.startKm}";"${r.slutKm}";"${r.distans}";"${r.syfte}"\r\n`;
+    });
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `korjournal_skogsbruk_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
 </script>
 </head>
 <body>
@@ -845,7 +998,7 @@ function sendRelToGallring() {
             <option value="kontrakt">Beställningsbekräftelse / Kontrakt</option>
         </select>
         <div style="display:none;"><input type="file" id="logo-upload"></div>
-    </fieldset>
+    
 
     <div class="tabs">
         <button type="button" class="tab-btn active" onclick="switchTab('dgv-tab', this)">d<sub>gv</sub></button>
@@ -1074,7 +1227,7 @@ function sendRelToGallring() {
                     </tr>
                 </tbody>
             </table>
-        </fieldset>
+        
 
         <h3 style="border-bottom:1px solid #ddd; margin-top:10px; color:var(--primary-color);">Aktiv Kalkyltaxa (Gallring)</h3>
         <div class="row">
@@ -1122,6 +1275,96 @@ function sendRelToGallring() {
             <canvas id="sig-pad" class="sig-canvas" width="550" height="130"></canvas>
         </div>
     </fieldset>
+    <!-- KÖRJOURNAL (LOKAL LAGRING & EXPORT) -->
+    <fieldset style="margin-top: 20px; border: 1px solid var(--primary-color); border-radius: 6px; padding: 15px; background: #fff;">
+        <legend style="font-weight: bold; color: var(--primary-color); padding: 0 10px; font-size: 14px;">🚗 Digital Körjournal (Lokal & Excel-export)</legend>
+        
+        <form id="korjournal-form" onsubmit="addKörjournalRow(event);" style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 120px;">
+                    <label style="display:block; font-size:11px; color:#555; font-weight:bold;">Datum</label>
+                    <input type="date" id="kj-datum" required style="width:100%; padding:6px; font-size:13px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div style="flex: 1; min-width: 120px;">
+                    <label style="display:block; font-size:11px; color:#555; font-weight:bold;">Kategori (Skatteverket)</label>
+                    <select id="kj-typ" required style="width:100%; padding:6px; font-size:13px; border:1px solid #ccc; border-radius:4px; background:white;">
+                        <option value="Tjänsteresa">💼 Tjänsteresa</option>
+                        <option value="Privatresa">🏠 Privatresa</option>
+                    </select>
+                </div>
+                <div style="flex: 1; min-width: 110px;">
+                    <label style="display:block; font-size:11px; color:#555;">Reg.nr (Fordon)</label>
+                    <input type="text" id="kj-regnr" placeholder="XYZ123" style="width:100%; padding:6px; font-size:13px; border:1px solid #ccc; border-radius:4px; text-transform: uppercase;">
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 180px;">
+                    <label style="display:block; font-size:11px; color:#555; font-weight:bold;">Från (Exakt startadress / ort)</label>
+                    <div style="display: flex; gap: 4px;">
+                        <input type="text" id="kj-fran" placeholder="Ex. Storgatan 1, Skellefteå" required style="width:100%; padding:6px; font-size:13px; border:1px solid #ccc; border-radius:4px;">
+                        <button type="button" onclick="getGpsLocation('kj-fran')" style="padding: 0 8px; font-size: 14px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer;" title="Hämta nuvarande GPS-position">📍</button>
+                    </div>
+                </div>
+                <div style="flex: 1; min-width: 180px;">
+                    <label style="display:block; font-size:11px; color:#555; font-weight:bold;">Till (Exakt slutadress / fastighet)</label>
+                    <div style="display: flex; gap: 4px;">
+                        <input type="text" id="kj-till" placeholder="Ex. Fältavdelning B / Bygdeå" required style="width:100%; padding:6px; font-size:13px; border:1px solid #ccc; border-radius:4px;">
+                        <button type="button" onclick="getGpsLocation('kj-till')" style="padding: 0 8px; font-size: 14px; background: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer;" title="Hämta nuvarande GPS-position">📍</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 100px;">
+                    <label style="display:block; font-size:11px; color:#555; font-weight:bold;">Mätarställning Start (km)</label>
+                    <input type="number" id="kj-start_km" placeholder="0" oninput="calcKjKm()" required style="width:100%; padding:6px; font-size:13px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div style="flex: 1; min-width: 100px;">
+                    <label style="display:block; font-size:11px; color:#555; font-weight:bold;">Mätarställning Slut (km)</label>
+                    <input type="number" id="kj-slut_km" placeholder="0" oninput="calcKjKm()" required style="width:100%; padding:6px; font-size:13px; border:1px solid #ccc; border-radius:4px;">
+                </div>
+                <div style="flex: 1; min-width: 80px;">
+                    <label style="display:block; font-size:11px; color:#555; font-weight:bold;">Distans (km)</label>
+                    <input type="number" id="kj-distans" placeholder="0" required style="width:100%; padding:6px; font-size:13px; border:1px solid #ccc; border-radius:4px; background:#f5f5f5;">
+                </div>
+            </div>
+
+            <div>
+                <label style="display:block; font-size:11px; color:#555; font-weight:bold;">Ärende / Syfte / Kontaktperson (Krav för tjänsteresa)</label>
+                <input type="text" id="kj-syfte" placeholder="Ex. Fastighetsinventering och gränsdragning hos kund" required style="width:100%; padding:6px; font-size:13px; border:1px solid #ccc; border-radius:4px;">
+            </div>
+
+            <button type="submit" style="background: var(--secondary-color); color: white; border: none; padding: 10px; font-size: 13px; font-weight: bold; border-radius: 4px; cursor: pointer; margin-top: 4px;">💾 Lägg till resa (Godkänd enligt SKV)</button>
+        </form>
+
+        <div style="margin-top: 15px; max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;" id="kj-table">
+                <thead style="background: #f5f5f5; position: sticky; top: 0; border-bottom: 204px;">
+                    <tr>
+                        <th style="padding: 6px; border-bottom: 1px solid #ddd;">Datum</th>
+                        <th style="padding: 6px; border-bottom: 1px solid #ddd;">Rutt</th>
+                        <th style="padding: 6px; border-bottom: 1px solid #ddd;">Km</th>
+                        <th style="padding: 6px; border-bottom: 1px solid #ddd;">Syfte</th>
+                        <th style="padding: 6px; border-bottom: 1px solid #ddd; text-align:center;">Radera</th>
+                    </tr>
+                </thead>
+                <tbody id="kj-tbody">
+                    <!-- Resor laddas dynamiskt -->
+                </tbody>
+            </table>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <button type="button" onclick="exportKörjournalToExcel()" style="flex: 1; background: #1f7246; color: white; border: none; padding: 10px; font-weight: bold; font-size: 13px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                📥 Exportera till Excel (.xlsx / .csv)
+            </button>
+            <button type="button" onclick="clearKörjournal()" style="background: var(--danger-color); color: white; border: none; padding: 10px; font-size: 13px; border-radius: 4px; cursor: pointer;" title="Rensa all historik">
+                Rensa journal
+            </button>
+        </div>
+    </fieldset>
+
 </div>
 
 
