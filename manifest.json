@@ -1,17 +1,24 @@
 {
-  "name": "Norrlands Skogsvård Fält Pro",
-  "short_name": "FältPro",
-  "start_url": "./index.html",
-  "display": "standalone",
-  "background_color": "#1e3f20",
-  "theme_color": "#1e3f20",
-  "orientation": "any",
+  "short_name": "Skogskalkyl Pro",
+  "name": "Skogskalkylator Pro Fält",
+  "description": "Professionell mobil skogskalkylator för oberoende skogsentreprenörer. Baserad på Skogforsk och Skogskunskap.",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/2823/2823101.png",
+      "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' width='192' height='192'><rect width='512' height='512' rx='100' fill='%231b3d22'/><path d='M256 80 L380 320 L310 320 L420 440 L92 440 L202 320 L132 320 Z' fill='%23f6d32d'/></svg>",
+      "type": "image/svg+xml",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' width='512' height='512'><rect width='512' height='512' rx='100' fill='%231b3d22'/><path d='M256 80 L380 320 L310 320 L420 440 L92 440 L202 320 L132 320 Z' fill='%23f6d32d'/></svg>",
+      "type": "image/svg+xml",
       "sizes": "512x512",
-      "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "start_url": "./index.html",
+  "background_color": "#f4f6f9",
+  "theme_color": "#1b3d22",
+  "display": "standalone",
+  "orientation": "portrait-primary"
 }
