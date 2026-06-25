@@ -2,6 +2,11 @@
   "short_name": "Skogskalkyl Pro",
   "name": "Skogskalkylator Pro Fält",
   "description": "Professionell mobil skogskalkylator för oberoende skogsentreprenörer. Baserad på Skogforsk och Skogskunskap.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f6f9",
+  "theme-color": "#1b3d22",
   "icons": [
     {
       "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' width='192' height='192'><rect width='512' height='512' rx='100' fill='%231b3d22'/><path d='M256 80 L380 320 L310 320 L420 440 L92 440 L202 320 L132 320 Z' fill='%232ecc71'/></svg>",
@@ -15,10 +20,5 @@
       "sizes": "512x512",
       "purpose": "any maskable"
     }
-  ],
-  "start_url": "./index.html",
-  "background_color": "#f4f6f9",
-  "theme_color": "#1b3d22",
-  "display": "standalone",
-  "orientation": "portrait-primary"
+  ]
 }
