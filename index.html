@@ -204,7 +204,7 @@ function initPricesAndSettings() {
     
     // Företagsdata standardvärden
     if (!localStorage.getItem('company_name')) localStorage.setItem('company_name', "Norrlands Skogsvård");
-    if (!localStorage.getItem('company_info')) localStorage.setItem('company_info', "Ort & Norrlands Skogsvård\nSkogliga entreprenadtjänster\nKontakt: info@norrlandsskogsvard.se\nOrg.nr: 556123-4567");
+    if (!localStorage.getItem('company_info')) localStorage.setItem('company_info', "Luleå, Norrlands Skogsvård\nSkogliga tjänster\nKontakt: norrlandsskogsvard@gmail.com\nOrg.nr: 891101-6015");
     
     document.getElementById('set-company-name').value = localStorage.getItem('company_name');
     document.getElementById('set-company-info').value = localStorage.getItem('company_info');
@@ -703,7 +703,7 @@ function buildFinalQuote() {
     saveSettings();
 
     const docType = document.getElementById('doc-type').value;
-    let mainTitle = "OFFERT: Skogliga Entreprenadtjänster";
+    let mainTitle = "OFFERT: Skogliga tjänster";
     if (docType === 'kontrakt') mainTitle = "BESTÄLLNINGSBEKRÄFTELSE & AVTALSKONTRAKT";
     document.getElementById('q-title').innerText = mainTitle;
 
@@ -791,9 +791,9 @@ function buildFinalQuote() {
     
     let termsTemplate = "";
     if (docType === 'kontrakt') {
-        termsTemplate = `<strong>AVTALSVILLKOR & BESTÄLLNING:</strong> Arbetet utförs enligt gällande skogsnormer och certifieringskrav (PEFC/FSC). Betalningsvillkor 30 dagar netto efter slutfört arbete och godkänd besiktning. Parterna godkänner härmed de allmänna villkoren för skogsentreprenad.${mapHtml}`;
+        termsTemplate = `<strong>AVTALSVILLKOR & BESTÄLLNING:</strong> Arbetet utförs enligt gällande skogsnormer. Betalningsvillkor 30 dagar netto efter slutfört arbete och godkänd besiktning. Parterna godkänner härmed de allmänna villkoren för skogsentreprenad.${mapHtml}`;
     } else {
-        termsTemplate = `<strong>OFFERTVILLKOR:</strong> Detta är ett kostnadsförslag baserat på fältinventering. Offerten är giltig till och med angivet datum ovan. Priserna förutsätter normala terrängförhållanden vid utförandetillfället.${mapHtml}`;
+        termsTemplate = `<strong>OFFERTVILLKOR:</strong> Detta är ett kostnadsförslag. Offerten är giltig till och med angivet datum ovan. Priserna förutsätter normala terrängförhållanden vid utförandetillfället.${mapHtml}`;
     }
     
     if(allaNoteringar.length > 0) {
@@ -1130,7 +1130,7 @@ function buildFinalQuote() {
             </div>
             <div class="quote-sender-info">
                 <strong id="print-company-name">Norrlands Skogsvård</strong><br>
-                <span id="print-company-info" style="white-space:pre-wrap; font-size:11px; color:#555;">Skogliga entreprenadtjänster</span>
+                <span id="print-company-info" style="white-space:pre-wrap; font-size:11px; color:#555;">Skogliga tjänster</span>
             </div>
         </div>
 
