@@ -52,6 +52,7 @@ input, select, textarea {
     background-color: #fff; 
     color: #000; 
 }
+input[type="file"] { padding: 6px; font-size: 14px; }
 input:focus, select:focus, textarea:focus { 
     outline: none; 
     border-color: var(--secondary-color); 
@@ -121,21 +122,21 @@ button { padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-
 .bolag-table th, .bolag-table td { border: 1px solid #ddd; padding: 6px; text-align: center; }
 .bolag-table th { background-color: #f2f2f2; }
 
-#quote-printout { display: none; background: white; padding: 35px; max-width: 800px; margin: 0 auto; border: 1px solid #ccc; box-sizing: border-box; }
-.quote-top-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
-.quote-logo-container { max-width: 200px; min-height: 50px; }
+#quote-printout { display: none; background: white; padding: 40px; max-width: 800px; margin: 0 auto; border: 1px solid #ccc; box-sizing: border-box; }
+.quote-top-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; }
+.quote-logo-container { max-width: 220px; min-height: 50px; }
 .quote-logo { max-width: 100%; height: auto; border: none; }
-.quote-sender-info { text-align: right; font-size: 14px; color: var(--primary-color); line-height: 1.4; }
-.quote-header { display: flex; justify-content: space-between; border-bottom: 2px solid var(--secondary-color); padding-bottom: 10px; margin-bottom: 20px; }
-.quote-title { font-size: 22px; font-weight: bold; color: var(--primary-color); }
-.quote-meta { text-align: right; font-size: 13px; color: #7f8c8d; line-height: 1.4; }
-.quote-table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 15px; }
-.quote-table th { background-color: #f8f9fa; text-align: left; padding: 10px; border-bottom: 2px solid #eee; font-size: 13px; }
-.quote-table td { padding: 10px; border-bottom: 1px solid #eee; font-size: 13px; }
-.quote-total-box { background-color: #f4fdf9; padding: 15px; border-radius: 6px; border: 1px solid var(--secondary-color); font-size: 15px; margin-top: 10px; }
-.quote-signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 50px; }
-.sig-line { border-top: 1px solid #999; margin-top: 50px; text-align: center; font-size: 12px; color: #555; position: relative; }
-.print-sig-img { max-height: 70px; display: block; margin: 0 auto; position: absolute; bottom: 20px; left: 0; right: 0; }
+.quote-sender-info { text-align: right; font-size: 15px; color: var(--text-color); line-height: 1.5; }
+.quote-header { display: flex; justify-content: space-between; border-bottom: 2px solid var(--primary-color); padding-bottom: 15px; margin-bottom: 25px; }
+.quote-title { font-size: 24px; font-weight: bold; color: var(--primary-color); margin-top: 10px; }
+.quote-meta { text-align: right; font-size: 14px; color: #555; line-height: 1.5; }
+.quote-table { width: 100%; border-collapse: collapse; margin-top: 20px; margin-bottom: 20px; }
+.quote-table th { background-color: #fff; text-align: left; padding: 12px 8px; border-bottom: 2px solid var(--primary-color); font-size: 14px; color: var(--primary-color); }
+.quote-table td { padding: 12px 8px; border-bottom: 1px solid #eee; font-size: 14px; vertical-align: top; }
+.quote-total-box { background-color: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 15px; margin-top: 15px; width: 360px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; }
+.quote-signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 60px; }
+.sig-line { border-top: 1px solid #999; margin-top: 60px; text-align: center; font-size: 13px; color: #333; position: relative; }
+.print-sig-img { max-height: 75px; display: block; margin: 0 auto; position: absolute; bottom: 25px; left: 0; right: 0; }
 .no-print-btn { background: #7f8c8d; color: white; padding: 8px 16px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 13px; margin-bottom: 15px; }
 
 /* Toast Notification Styles */
@@ -207,9 +208,8 @@ window.onload = function() {
     loadSettings();
     setupCanvas();
     generateStaticDocNumber();
-    initKörjournal(); // Fixad: Så att körjournalen faktiskt laddas direkt
+    initKörjournal(); 
     
-    // Fixad: Säkrare inläsning av gammal varukorg som kan förhindra krascher
     if (localStorage.getItem('ns_cart_backup')) {
         try {
             let parsedCart = JSON.parse(localStorage.getItem('ns_cart_backup'));
@@ -473,8 +473,8 @@ function getRojningData() {
     let exkl = (totalaTimmar * timpris) + (totalaTimmar * maskinpris);
 
     return {
-        type: 'Röjning',
-        spec: `${document.getElementById('roj-typ').options[document.getElementById('roj-typ').selectedIndex].text} (${tradslag}), ${stammar} stam/ha, medelhöjd ${hojd}m.`,
+        type: 'Skogsvård (Röjning)',
+        spec: `${document.getElementById('roj-typ').options[document.getElementById('roj-typ').selectedIndex].text}. Estimerad insats baserat på ${stammar} stam/ha och medelhöjd ${hojd}m.`,
         vol: `${hektar} ha`,
         unitPr: Math.round(exkl / hektar),
         exkl: exkl,
@@ -503,8 +503,8 @@ function getPlanteringData() {
     let exkl = (totPlantor * plantpris) + (totPlantor * arbete) + (ha * mbHa);
 
     return {
-        type: 'Plantering',
-        spec: `Skogsföryngring: Sättning av ca ${totPlantor.toLocaleString()} st plantor inkl. markberedning.`,
+        type: 'Skogsföryngring',
+        spec: `Sättning av ca ${totPlantor.toLocaleString()} st plantor (inkl. markberedning).`,
         vol: `${ha} ha`,
         unitPr: Math.round(exkl / ha),
         exkl: exkl,
@@ -560,8 +560,8 @@ function getGallringData() {
     }
 
     return {
-        type: 'Gallring',
-        spec: `Beståndsgallring baserad på h_m. Ståndortsindex: ${si}. Uttag: ${uttagPct}%. Estimerat uttag: ${Math.round(gallradVolym)} m³sk.`,
+        type: 'Skogsvård (Gallring)',
+        spec: `Beståndsgallring. Estimerat uttag: ${Math.round(gallradVolym)} m³sk (ca ${uttagPct}%).`,
         vol: `${ha} ha`,
         unitPr: Math.round(nettoExkl / ha),
         exkl: nettoExkl, 
@@ -603,9 +603,9 @@ function getPlanData() {
 
     return {
         type: 'Skogsbruksplan',
-        spec: `Ny grön skogsbruksplan omfattande ${hektar} ha fördelat på ${skiften+1} skifte(n).`,
-        vol: `1 st`,
-        unitPr: Math.round(exkl),
+        spec: `Upprättande av grön skogsbruksplan för fastigheten.`,
+        vol: `${hektar} ha`,
+        unitPr: Math.round(exkl / hektar),
         exkl: exkl,
         noteringar: document.getElementById('plan-noteringar').value
     };
@@ -662,13 +662,14 @@ function updateCartUI() {
     cart.forEach((item, index) => {
         let div = document.createElement('div');
         div.className = "cart-item";
-        let prLabel = item.exkl < 0 ? `${Math.round(item.exkl).toLocaleString()} kr (kostnad)` : `${Math.round(item.exkl).toLocaleString()} kr`;
+        let absExkl = Math.round(Math.abs(item.exkl)).toLocaleString();
+        let prLabel = item.exkl < 0 ? `${absExkl} kr (Kostnad)` : `${absExkl} kr`;
         div.innerHTML = `<div><strong>${item.type}</strong> - ${prLabel}</div><button type='button' onclick='removeFromCart(${index})'>Ta bort</button>`;
         container.appendChild(div);
     });
 }
 
-// --- GENERERA OFFERT & TEXTEXPORT (SÄKERHETSKODAD) ---
+// --- GENERERA OFFERT & TEXTEXPORT (SÄKERHETSKODAD & INBAKAD TRANSPORT) ---
 function buildFinalQuote() {
     try {
         if(cart.length === 0) { 
@@ -705,31 +706,42 @@ function buildFinalQuote() {
         let totalIntaktExkl = 0;
         let allaNoteringar = [];
 
+        // Räkna ut transportkostnad och baka in i enhetspriserna (Dold för kunden)
+        let mil = parseFloat(document.getElementById('quote-mil') ? document.getElementById('quote-mil').value : 0) || 0;
+        let milpris = parseFloat(localStorage.getItem('pr_transport_milpris')) || 0;
+        let transportKostnad = mil * milpris;
+        let transportPerItem = cart.length > 0 ? transportKostnad / cart.length : 0;
+
         cart.forEach(item => {
             let row = document.createElement('tr');
             
+            let isIncome = (item.type.includes('Gallring') && item.exkl >= 0);
             let itemExkl = item.exkl || 0;
-            let itemUnitPr = item.unitPr || 0;
-            let sumText = "";
+            let finalItemSum = 0;
 
-            if (item.type === 'Gallring') {
-                if (itemExkl >= 0) {
-                    totalIntaktExkl += itemExkl;
-                    sumText = `+${Math.round(itemExkl).toLocaleString()} kr (Nettointäkt)`;
-                } else {
-                    totalKostnadExkl += Math.abs(itemExkl);
-                    sumText = `-${Math.round(Math.abs(itemExkl)).toLocaleString()} kr (Nettokostnad)`;
-                }
+            if (isIncome) {
+                // Transportkostnad minskar den rena intäkten osynligt
+                finalItemSum = itemExkl - transportPerItem; 
+                totalIntaktExkl += finalItemSum;
             } else {
-                totalKostnadExkl += itemExkl;
-                sumText = `${Math.round(itemExkl).toLocaleString()} kr`;
+                // Transportkostnad läggs på bas-kostnaden osynligt
+                let baseCost = itemExkl < 0 ? Math.abs(itemExkl) : itemExkl;
+                finalItemSum = baseCost + transportPerItem;
+                totalKostnadExkl += finalItemSum;
             }
 
+            // Anpassat enhetspris med inbakad frakt
+            let volNumber = parseFloat(item.vol) || 1;
+            let displayUnitPr = Math.round(finalItemSum / volNumber);
+            let displayTotal = Math.round(finalItemSum);
+
+            let typeLabel = isIncome ? "(Intäkt)" : "(Kostnad)";
+
             row.innerHTML = `
-                <td><strong>${item.type || 'Åtgärd'}</strong><br><span style="font-size:11px; color:#555;">${item.spec || ''}</span></td>
+                <td><strong>${item.type || 'Åtgärd'}</strong><br><span style="font-size:12px; color:#555; display:block; margin-top:2px;">${item.spec || ''}</span></td>
                 <td>${item.vol || '-'}</td>
-                <td>${itemUnitPr.toLocaleString()} kr</td>
-                <td>${sumText}</td>
+                <td>${displayUnitPr.toLocaleString()} kr</td>
+                <td style="font-weight:bold;">${displayTotal.toLocaleString()} kr <span style="font-size:11px; font-weight:normal; color:#777;">${typeLabel}</span></td>
             `;
             if(tableBody) tableBody.appendChild(row);
 
@@ -738,36 +750,36 @@ function buildFinalQuote() {
             }
         });
 
-        let mil = parseFloat(document.getElementById('quote-mil') ? document.getElementById('quote-mil').value : 0) || 0;
-        let milpris = parseFloat(localStorage.getItem('pr_transport_milpris')) || 0;
-        let transportKostnad = mil * milpris;
-        
-        if (transportKostnad > 0 && tableBody) {
-            totalKostnadExkl += transportKostnad;
-            let row = document.createElement('tr');
-            row.innerHTML = `
-                <td><strong>Inställelse- & Transportersättning</strong><br><span style="font-size:11px; color:#555;">Baserat på köravstånd till fastigheten (${mil} mil á ${milpris} kr/mil)</span></td>
-                <td>${mil} mil</td>
-                <td>${milpris} kr</td>
-                <td>${Math.round(transportKostnad).toLocaleString()} kr</td>
-            `;
-            tableBody.appendChild(row);
-        }
-
+        // Sluträkning Netto
         let slutNetto = totalIntaktExkl - totalKostnadExkl;
         let moms = Math.abs(slutNetto) * 0.25;
         
-        if(document.getElementById('q-tot-exkl')) document.getElementById('q-tot-exkl').innerText = `${Math.round(slutNetto).toLocaleString()} kr`;
+        if(document.getElementById('q-tot-exkl')) document.getElementById('q-tot-exkl').innerText = `${Math.round(Math.abs(slutNetto)).toLocaleString()} kr`;
         if(document.getElementById('q-tot-moms')) document.getElementById('q-tot-moms').innerText = `${Math.round(moms).toLocaleString()} kr`;
         
         let totalBoxHtml = "";
         const timmarEl = document.getElementById('q-tot-timmar');
+        
         if (slutNetto >= 0) {
-            totalBoxHtml = `<span><strong>Netto att erhålla för skogsägare:</strong></span><span><strong>${Math.round(slutNetto + moms).toLocaleString()} kr (inkl. moms)</strong></span>`;
+            // Intäkt till kund
+            totalBoxHtml = `
+                <div style="display: flex; justify-content: space-between; width: 100%;">
+                    <span style="color: #27ae60;"><strong>Att utbetala till kund:</strong></span>
+                    <span style="color: #27ae60; font-size: 18px;"><strong>${Math.round(slutNetto + moms).toLocaleString()} kr</strong></span>
+                </div>
+                <div style="font-size: 12px; color: #777; text-align: right; margin-top: 4px;">Summa inkl. 25% moms</div>
+            `;
             if(timmarEl) timmarEl.innerText = "Skoglig nettointäkt utbetalas till kund efter slutfört och godkänt virkesuttag.";
         } else {
-            totalBoxHtml = `<span><strong>Totalsumma att betala (Kostnad):</strong></span><span><strong>${Math.round(Math.abs(slutNetto) + moms).toLocaleString()} kr (inkl. moms)</strong></span>`;
-            if(timmarEl) timmarEl.innerText = "Faktureras efter slutfört och godkänt utförande, 30 dagar netto.";
+            // Kostnad för kund
+            totalBoxHtml = `
+                <div style="display: flex; justify-content: space-between; width: 100%;">
+                    <span><strong>Totalsumma att betala:</strong></span>
+                    <span style="font-size: 18px;"><strong>${Math.round(Math.abs(slutNetto) + moms).toLocaleString()} kr</strong></span>
+                </div>
+                <div style="font-size: 12px; color: #777; text-align: right; margin-top: 4px;">Summa inkl. 25% moms</div>
+            `;
+            if(timmarEl) timmarEl.innerText = "Faktureras efter slutfört och godkänt utförande. Betalningsvillkor: 30 dagar netto.";
         }
         if(document.getElementById('q-total-box-wrapper')) document.getElementById('q-total-box-wrapper').innerHTML = totalBoxHtml;
 
@@ -775,27 +787,28 @@ function buildFinalQuote() {
         if(noteBox) {
             if(allaNoteringar.length > 0) {
                 noteBox.style.display = "block"; 
-                noteBox.innerHTML = `<strong>Särskilda noteringar för uppdraget:</strong><br>${allaNoteringar.join('<br>')}`;
+                noteBox.innerHTML = `<strong>Särskilda uppdragsnoteringar:</strong><br>${allaNoteringar.join('<br>')}`;
             } else { 
                 noteBox.style.display = "none"; 
             }
         }
 
-        let harSkogsvard = cart.some(i => i.type === 'Röjning' || i.type === 'Plantering');
-        let harGallring = cart.some(i => i.type === 'Gallring');
-        let harPlan = cart.some(i => i.type === 'Skogsbruksplan');
+        let harSkogsvard = cart.some(i => i.type.includes('Röjning') || i.type.includes('föryngring'));
+        let harGallring = cart.some(i => i.type.includes('Gallring'));
+        let harPlan = cart.some(i => i.type.includes('Skogsbruksplan'));
 
-        let termsText = "<strong>Standardvillkor & Allmänna bestämmelser:</strong><br>";
+        let termsText = "<strong>Allmänna bestämmelser:</strong><br>";
         if (harSkogsvard || harGallring) {
             termsText += "• Fastighetsägaren ansvarar för att tillse att fastighetsgränser and arbetsområden är tillräckligt markerade i fält innan arbetets start.<br>";
         }
         if (harGallring) {
-            termsText += "• Volymberäkningar är uppskattningar grundade på aritmetiskt fältstickprov (h_m). Slutlig inmätning sker vid industri/mottagande vält.<br>";
+            termsText += "• Volymberäkningar är uppskattningar grundade på fältstickprov. Slutlig ekonomisk reglering sker utifrån formell industriinmätning.<br>";
         }
         if (harPlan) {
-            termsText += "• Vid upprättande av skogsbruksplan förbinder sig kunden att tillhandahålla eventuellt äldre kartmaterial.<br>";
+            termsText += "• Vid upprättande av skogsbruksplan förbinder sig kunden att tillhandahålla eventuellt äldre kartmaterial och underlag.<br>";
         }
-        termsText += "• Betalningsvillkor: 30 dagar netto efter slutlevererat uppdrag och godkänd egenkontroll.";
+        termsText += "• Transportkostnader till och från objekt är inkluderade i ovanstående priser.<br>";
+        termsText += "• Om inget annat avtalats gäller 30 dagars betalningsvillkor från fakturadatum.";
         if(document.getElementById('q-terms-text')) document.getElementById('q-terms-text').innerHTML = termsText;
 
         const mapLnkEl = document.getElementById('quote-map-link');
@@ -804,7 +817,7 @@ function buildFinalQuote() {
             const mapLnk = mapLnkEl.value;
             if(mapLnk) {
                 qMapEl.style.display = "block";
-                qMapEl.innerHTML = `<strong>Geografiskt underlag (Lantmäteriet):</strong><br><a href="${mapLnk}" target="_blank" style="color:#2980b9; word-break:break-all;">${mapLnk}</a>`;
+                qMapEl.innerHTML = `<strong>Lantmäteriunderlag:</strong><br><a href="${mapLnk}" target="_blank" style="color:#2980b9; word-break:break-all;">${mapLnk}</a>`;
             } else { 
                 qMapEl.style.display = "none"; 
             }
@@ -827,7 +840,7 @@ function buildFinalQuote() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch(err) {
         console.error("Fel vid skapande av offert:", err);
-        alert("Något gick fel när offerten skulle byggas upp. Rensa gärna varukorgen och försök igen. Detaljer: " + err.message);
+        alert("Något gick fel när offerten skulle byggas upp. Rensa varukorgen och försök igen.");
     }
 }
 
@@ -839,11 +852,12 @@ function copyQuoteAsText() {
     let textOut = `--- NORRLANDS SKOGSVÅRD ---\nDokumentnr: ${nr}\nKund: ${kund}\nFastighet: ${fastighet}\n\nSpecifikation:\n`;
     
     cart.forEach(item => {
-        textOut += `- ${item.type || 'Åtgärd'}: ${item.vol || '-'} | Netto: ${Math.round(item.exkl || 0)} kr\n  (${item.spec || ''})\n`;
+        let absExkl = Math.round(Math.abs(item.exkl || 0));
+        textOut += `- ${item.type || 'Åtgärd'}: ${item.vol || '-'} | Summa: ${absExkl} kr\n`;
     });
     
     const totText = document.getElementById('q-tot-exkl') ? document.getElementById('q-tot-exkl').innerText : "0 kr";
-    textOut += `\nSlutsumma exkl moms: ${totText}\nGenererad i fält via Norrlands Skogsvård App.`;
+    textOut += `\nSlutsumma netto: ${totText}\n(Avser exkl. moms. Transportkostnad inkluderad).`;
     
     navigator.clipboard.writeText(textOut).then(() => {
         showToast("Offertexten har kopierats till urklipp!");
@@ -874,43 +888,32 @@ function sendRelToGallring() {
     showToast("Grundyta överförd till gallringsfliken!");
 }
 
-// --- KÖRJOURNAL LOGIK (LOKAL LAGRING & EXPORT) ---
+// --- KÖRJOURNAL LOGIK ---
 let korjournal = JSON.parse(localStorage.getItem('skogskalkyl_korjournal') || '[]');
 
 function getGpsLocation(fieldId) {
     const inputElement = document.getElementById(fieldId);
     if (!navigator.geolocation) {
-        alert("Tyvärr stöder inte din webbläsare eller enhet GPS-positionering.");
+        alert("Tyvärr stöder inte din webbläsare GPS-positionering.");
         return;
     }
-    
     inputElement.value = "Hämtar GPS-koordinater...";
-    
     navigator.geolocation.getCurrentPosition(
         async (position) => {
             const lat = position.coords.latitude.toFixed(5);
             const lon = position.coords.longitude.toFixed(5);
-            
             try {
-                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`, {
-                    headers: { 'Accept-Language': 'sv' }
-                });
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`, { headers: { 'Accept-Language': 'sv' } });
                 if (response.ok) {
                     const data = await response.json();
                     const address = data.display_name || "";
-                    const shortAddress = address.split(',').slice(0, 3).join(',').trim();
-                    inputElement.value = shortAddress || `${lat}, ${lon}`;
+                    inputElement.value = address.split(',').slice(0, 3).join(',').trim() || `${lat}, ${lon}`;
                 } else {
                     inputElement.value = `${lat}, ${lon}`;
                 }
-            } catch (error) {
-                inputElement.value = `${lat}, ${lon}`;
-            }
+            } catch (error) { inputElement.value = `${lat}, ${lon}`; }
         },
-        (error) => {
-            alert("Kunde inte hämta GPS-position. Kontrollera att du har gett appen behörighet till platstjänster.");
-            inputElement.value = "";
-        },
+        (error) => { alert("Kunde inte hämta GPS-position."); inputElement.value = ""; },
         { enableHighAccuracy: true, timeout: 10000 }
     );
 }
@@ -925,9 +928,7 @@ function initKörjournal() {
 function calcKjKm() {
     const start = parseFloat(document.getElementById('kj-start_km').value) || 0;
     const slut = parseFloat(document.getElementById('kj-slut_km').value) || 0;
-    if (slut >= start && start > 0) {
-        document.getElementById('kj-distans').value = slut - start;
-    }
+    if (slut >= start && start > 0) { document.getElementById('kj-distans').value = slut - start; }
 }
 
 function addKörjournalRow(e) {
@@ -942,8 +943,7 @@ function addKörjournalRow(e) {
     const distans = parseFloat(document.getElementById('kj-distans').value) || 0;
     const syfte = document.getElementById('kj-syfte').value;
 
-    const nyResa = { id: Date.now(), datum, typ, regnr, fran, till, startKm, slutKm, distans, syfte };
-    korjournal.push(nyResa);
+    korjournal.push({ id: Date.now(), datum, typ, regnr, fran, till, startKm, slutKm, distans, syfte });
     localStorage.setItem('skogskalkyl_korjournal', JSON.stringify(korjournal));
     
     document.getElementById('kj-fran').value = '';
@@ -952,7 +952,6 @@ function addKörjournalRow(e) {
     document.getElementById('kj-slut_km').value = '';
     document.getElementById('kj-distans').value = '';
     document.getElementById('kj-syfte').value = '';
-    
     renderKörjournalTable();
     showToast("Resa tillagd i körjournalen!");
 }
@@ -985,38 +984,28 @@ function renderKörjournalTable() {
 
     korjournal.sort((a, b) => b.datum.localeCompare(a.datum)).forEach(r => {
         const tr = document.createElement('tr');
-        tr.style.borderBottom = '1px solid #eee';
         const badgeColor = r.typ === 'Tjänsteresa' ? '#2ecc71' : '#f39c12';
         tr.innerHTML = `
-            <td style="padding:6px; white-space:nowrap;"><strong>${r.datum}</strong><br><span style="font-size:10px; background:${badgeColor}; color:white; padding:1px 4px; border-radius:3px;">${r.typ || 'Tjänst'}</span></td>
-            <td style="padding:6px; font-size:11px;">Från: ${r.fran}<br>Till: ${r.till}<br><span style="color:#7f8c8d;">Mätare: ${r.startKm} ➔ ${r.slutKm} km</span></td>
-            <td style="padding:6px; font-weight:bold; white-space:nowrap;">${r.distans} km</td>
-            <td style="padding:6px; color:#555; font-size:11px;">${r.syfte} ${r.regnr ? '<br><small style="color:#999;">Bil: '+r.regnr+'</small>' : ''}</td>
-            <td style="padding:6px; text-align:center;"><button type="button" onclick="deleteKjRow(${r.id})" style="background:none; border:none; color:#e74c3c; font-weight:bold; cursor:pointer; font-size:14px;">✕</button></td>
+            <td style="padding:6px; border-bottom:1px solid #eee; white-space:nowrap;"><strong>${r.datum}</strong><br><span style="font-size:10px; background:${badgeColor}; color:white; padding:1px 4px; border-radius:3px;">${r.typ || 'Tjänst'}</span></td>
+            <td style="padding:6px; border-bottom:1px solid #eee; font-size:11px;">Från: ${r.fran}<br>Till: ${r.till}<br><span style="color:#7f8c8d;">Mätare: ${r.startKm} ➔ ${r.slutKm} km</span></td>
+            <td style="padding:6px; border-bottom:1px solid #eee; font-weight:bold;">${r.distans} km</td>
+            <td style="padding:6px; border-bottom:1px solid #eee; color:#555; font-size:11px;">${r.syfte} ${r.regnr ? '<br><small style="color:#999;">Bil: '+r.regnr+'</small>' : ''}</td>
+            <td style="padding:6px; border-bottom:1px solid #eee; text-align:center;"><button type="button" onclick="deleteKjRow(${r.id})" style="background:none; border:none; color:#e74c3c; font-weight:bold; cursor:pointer; font-size:14px;">✕</button></td>
         `;
         tbody.appendChild(tr);
     });
 }
 
 function exportKörjournalToExcel() {
-    if (korjournal.length === 0) {
-        alert('Det finns inga registrerade resor att exportera.');
-        return;
-    }
-    
-    let csvContent = "\uFEFF";
-    csvContent += "Datum;Typ av resa;Reg.nr;Från-adress;Till-adress;Mätarställning Start;Mätarställning Slut;Distans (km);Ärende / Syfte / Kontaktperson\r\n";
-    
+    if (korjournal.length === 0) { alert('Inga resor att exportera.'); return; }
+    let csvContent = "\uFEFFDatum;Typ av resa;Reg.nr;Från-adress;Till-adress;Mätarställning Start;Mätarställning Slut;Distans (km);Ärende / Syfte / Kontaktperson\r\n";
     korjournal.sort((a, b) => a.datum.localeCompare(b.datum)).forEach(r => {
         csvContent += `"${r.datum}";"${r.typ || 'Tjänsteresa'}";"${r.regnr || ''}";"${r.fran}";"${r.till}";"${r.startKm}";"${r.slutKm}";"${r.distans}";"${r.syfte}"\r\n`;
     });
-    
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `korjournal_skogsbruk_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
+    link.href = URL.createObjectURL(blob);
+    link.download = `korjournal_skogsbruk_${new Date().toISOString().split('T')[0]}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1048,21 +1037,24 @@ function exportKörjournalToExcel() {
         </div>
         <div class="row">
             <div><label>Kontakt (Tel/E-post):</label><input type="text" id="quote-kontakt" placeholder="Kontaktuppgifter" onchange="saveSettings()"></div>
-            <div><label>Avstånd till objekt (mil):</label><input type="number" id="quote-mil" placeholder="Antal mil" min="0" onchange="saveSettings()"></div>
+            <div><label>Avstånd till objekt (mil):</label><input type="number" id="quote-mil" placeholder="Antal mil (Bakas in i priset)" min="0" onchange="saveSettings()"></div>
         </div>
         <label>Kartlänk från Lantmäteriet (Min Karta):</label>
         <input type="url" id="quote-map-link" placeholder="Klistra in länk" onchange="saveSettings()">
-        <label>Skapa dokument som:</label>
+        
+        <label style="margin-top:10px;">Ladda upp företagslogga (visas på offert):</label>
+        <input type="file" id="logo-upload" accept="image/*" style="background:#fff; border:1px solid #ccc; border-radius:4px;">
+        
+        <label style="margin-top:10px;">Skapa dokument som:</label>
         <select id="doc-type" onchange="saveSettings()">
             <option value="offert">Prisoffert (Standardförslag)</option>
             <option value="kontrakt">Beställningsbekräftelse / Kontrakt</option>
         </select>
-        <div style="display:none;"><input type="file" id="logo-upload"></div>
     </fieldset>
 
     <div class="tabs">
         <button type="button" class="tab-btn active" onclick="switchTab('dgv-tab', this)">d<sub>gv</sub></button>
-        <button type="button" class="tab-btn" onclick="switchTab('hm-tab', this)">h<sub>m</sub> (Höjd)</button>
+        <button type="button" class="tab-btn" onclick="switchTab('hm-tab', this)">h<sub>m</sub></button>
         <button type="button" class="tab-btn" onclick="switchTab('rojning-tab', this)">Röjning</button>
         <button type="button" class="tab-btn" onclick="switchTab('plant-tab', this)">Plant</button>
         <button type="button" class="tab-btn" onclick="switchTab('gallring-tab', this)">Gallring</button>
@@ -1102,7 +1094,7 @@ function exportKörjournalToExcel() {
 
     <div id="hm-tab" class="tab-content">
         <h2>Aritmetisk Trädhöjd <span id="hm-title-num">1</span></h2>
-        <div class="sub">Beräknar fältbaserad Aritmetisk medelhöjd (h<sub>m</sub>) för beståndet</div>
+        <div class="sub">Beräknar fältbaserad Aritmetisk medelhöjd (h<sub>m</sub>)</div>
         <label>Höjd (m):</label>
         <input type="text" id="hm-hojd-input" placeholder="Ange höjd i meter" inputmode="decimal">
         <div class="keypad">
@@ -1430,7 +1422,6 @@ function exportKörjournalToExcel() {
         <div class="quote-sender-info">
             <strong style="font-size:18px;">Norrlands Skogsvård</strong><br>
             Oberoende Skogsskötsel & Planering<br>
-            Fältrapport genererad digitalt via mobilapplikation
         </div>
     </div>
 
@@ -1444,16 +1435,16 @@ function exportKörjournalToExcel() {
     </div>
 
     <div class="quote-section">
-        <table style="width:100%; font-size:13px; margin-bottom:15px;">
+        <table style="width:100%; font-size:14px; margin-bottom:15px;">
             <tr>
                 <td style="width:50%; vertical-align:top; padding:0;">
-                    <strong>Beställare / Fastighetsägare:</strong><br>
-                    <div id="q-kund">-</div>
+                    <strong style="color:var(--primary-color);">Beställare / Fastighetsägare:</strong><br>
+                    <div id="q-kund" style="margin-top:4px;">-</div>
                     <div id="q-kontakt">-</div>
                 </td>
                 <td style="width:50%; vertical-align:top; padding:0;">
-                    <strong>Fastighet & Lokalisering:</strong><br>
-                    <div id="q-fastighet">-</div>
+                    <strong style="color:var(--primary-color);">Fastighet & Lokalisering:</strong><br>
+                    <div id="q-fastighet" style="margin-top:4px;">-</div>
                     <div id="q-map" style="margin-top:4px; font-size:12px; display:none;"></div>
                 </td>
             </tr>
@@ -1461,14 +1452,13 @@ function exportKörjournalToExcel() {
     </div>
 
     <div class="quote-section">
-        <h3 style="font-size:14px; border-bottom:2px solid var(--primary-color); padding-bottom:4px; color:var(--primary-color); margin-bottom:5px;">Ekonomisk Specifikation (SEK)</h3>
         <table class="quote-table">
             <thead>
                 <tr>
-                    <th>Åtgärdsbeskrivning & Omfattning (Baserat på h<sub>m</sub>)</th>
+                    <th style="width:45%;">Åtgärdsbeskrivning (Baserat på h<sub>m</sub>)</th>
                     <th>Volym</th>
                     <th>Enhetspris</th>
-                    <th>Summa (exkl. moms)</th>
+                    <th>Summa exkl. moms</th>
                 </tr>
             </thead>
             <tbody>
@@ -1476,35 +1466,27 @@ function exportKörjournalToExcel() {
         </table>
     </div>
 
-    <div id="q-extra-noteringar" style="margin:15px 0; padding:12px; background:#f9f9f9; border-left:4px solid var(--accent-color); font-size:12px; display:none;"></div>
+    <div id="q-extra-noteringar" style="margin:15px 0; padding:15px; background:#f9f9f9; border-left:4px solid var(--accent-color); font-size:13px; display:none;"></div>
 
-    <div class="quote-section" style="margin-top: 20px;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-end;">
-            <div style="font-size:12px; color:#555; max-width:50%;" id="q-tot-timmar">-</div>
-            <div style="width: 280px;">
-                <div style="display: flex; justify-content: space-between; font-size:13px; margin-bottom:4px;">
-                    <span>Netto exkl. moms:</span><span id="q-tot-exkl">-</span>
+    <div class="quote-section" style="margin-top: 30px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div style="font-size:12px; color:#555; max-width:45%; margin-top:20px; line-height:1.5;" id="q-tot-timmar">-</div>
+            <div class="quote-total-box" id="q-total-box-wrapper">
                 </div>
-                <div style="display: flex; justify-content: space-between; font-size:13px; margin-bottom:4px;">
-                    <span>Beräknad moms (25%):</span><span id="q-tot-moms">-</span>
-                </div>
-                <div class="quote-total-box" id="q-total-box-wrapper" style="display: flex; justify-content: space-between; font-weight: bold;">
-                </div>
-            </div>
         </div>
     </div>
 
-    <div class="quote-section" id="q-terms-text" style="margin-top: 35px; font-size: 11px; color: #555; line-height: 1.5; background:#fafafa; padding:10px; border-radius:4px;">
+    <div class="quote-section" id="q-terms-text" style="margin-top: 40px; font-size: 12px; color: #555; line-height: 1.6; background:#fafafa; padding:15px; border-radius:6px;">
     </div>
 
     <div class="quote-signatures">
         <div class="sig-line">
-            <div id="sig-entreprenor-meta" style="font-size:11px; color:#7f8c8d; margin-bottom:5px;">-</div>
+            <div id="sig-entreprenor-meta" style="font-size:12px; color:#7f8c8d; margin-bottom:5px;">-</div>
             Ort & Norrlands Skogsvård
         </div>
         <div class="sig-line">
             <img id="print-sig" class="print-sig-img" src="" alt="">
-            <div id="sig-kund-meta" style="font-size:11px; color:#7f8c8d; margin-bottom:5px;">-</div>
+            <div id="sig-kund-meta" style="font-size:12px; color:#7f8c8d; margin-bottom:5px;">-</div>
             Ort & Godkännande av fastighetsägare
         </div>
     </div>
