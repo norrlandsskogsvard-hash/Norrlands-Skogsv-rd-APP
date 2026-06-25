@@ -1,7 +1,7 @@
 {
   "name": "Norrlands Skogsvård - Fältkalkylator",
   "short_name": "Skogskalkyl",
-  "description": "Mobil fältkalkylator för skogsentreprenörer",
+  "description": "Mobil fältkalkylator för skogsvård på skogsvård.se",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f4f6f9",
