@@ -1,4 +1,4 @@
-const CACHE_NAME = 'skogskalkylator-v20.0-inställningar';
+const CACHE_NAME = 'skogskalkylator-v40.0-inställningar';
 const ASSETS = [
   './',
   './index.html',
