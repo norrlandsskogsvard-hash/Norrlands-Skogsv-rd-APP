@@ -39,6 +39,7 @@ body {
     box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
     max-width: 600px; 
     margin: 0 auto 20px auto; 
+    box-sizing: border-box;
 }
 
 input, select, textarea { 
@@ -90,10 +91,10 @@ h2 { color: var(--primary-color); margin: 10px 0 5px 0; font-size: 18px; display
 h3 { color: var(--primary-color); font-size: 15px; margin: 15px 0 5px 0; border-bottom: 1px solid #eee; padding-bottom: 3px; }
 .sub { color: #7f8c8d; font-size: 12px; margin-bottom: 15px; }
 label { font-weight: bold; display: block; margin-top: 6px; color: #34495e; font-size: 13px; }
-.row { display: flex; gap: 8px; }
-.row div { flex: 1; }
+.row { display: flex; gap: 8px; width: 100%; box-sizing: border-box; }
+.row div { flex: 1; min-width: 0; }
 
-button { padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold; transition: background 0.2s; }
+button { padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold; transition: background 0.2s; box-sizing: border-box; }
 .btn-next { width: 48%; background-color: var(--accent-color); color: white; }
 .btn-undo { width: 48%; background-color: #7f8c8d; color: white; }
 .btn-calc-full { width: 100%; background-color: var(--secondary-color); color: white; margin-top: 5px; }
@@ -109,18 +110,17 @@ button { padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-
 .key-btn { background: #e2e8f0; color: #2d3748; padding: 14px; font-size: 18px; border-radius: 6px; border: none; cursor: pointer; text-align: center; user-select: none; }
 .key-btn:active { background: #cbd5e1; }
 
-.cart-badge { background: var(--danger-color); color: white; border-radius: 50%; padding: 2px 7px; font-size: 11px; margin-left: 5px; }
 .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; font-size: 13px; }
-.cart-item button { padding: 2px 6px; font-size: 11px; background: var(--danger-color); color: white; }
+.cart-item button { padding: 4px 8px; font-size: 11px; background: var(--danger-color); color: white; border-radius: 4px; }
 
-.signature-container { border: 2px dashed var(--border-color); background: #fff; margin-top: 10px; position: relative; border-radius: 6px; }
-.sig-canvas { display: block; width: 100%; height: 130px; background: #fff; cursor: crosshair; touch-action: none; }
+.signature-container { border: 2px dashed var(--border-color); background: #fff; margin-top: 10px; position: relative; border-radius: 6px; width: 100%; overflow: hidden; }
+.sig-canvas { display: block; width: 100%; height: 150px; background: #fff; cursor: crosshair; touch-action: none; }
 .clear-sig-btn { position: absolute; right: 5px; top: 5px; background: var(--danger-color); color: white; padding: 4px 8px; font-size: 11px; border-radius: 4px; border:none; cursor:pointer; }
 
 #quote-printout { display: none; background: white; padding: 35px; max-width: 800px; margin: 0 auto; border: 1px solid #ccc; box-sizing: border-box; }
 .quote-top-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
-.quote-logo-container { max-width: 200px; min-height: 50px; }
-.quote-logo { max-width: 100%; height: auto; border: none; }
+.quote-logo-container { max-width: 200px; min-height: 50px; display: flex; align-items: center; }
+.quote-logo { max-width: 100%; max-height: 80px; height: auto; border: none; object-fit: contain; }
 .quote-sender-info { text-align: right; font-size: 13px; color: var(--primary-color); line-height: 1.4; }
 .quote-header { display: flex; justify-content: space-between; border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; margin-bottom: 20px; }
 .quote-title { font-size: 22px; font-weight: bold; color: var(--primary-color); }
@@ -132,12 +132,13 @@ button { padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-
 .quote-signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 50px; }
 .sig-line { border-top: 1px solid #999; margin-top: 50px; text-align: center; font-size: 12px; color: #555; position: relative; }
 .print-sig-img { max-height: 70px; display: block; margin: 0 auto; position: absolute; bottom: 20px; left: 0; right: 0; }
-.no-print-btn { background: #7f8c8d; color: white; padding: 8px 16px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 13px; margin-bottom: 15px; }
+.no-print-btn { background: #7f8c8d; color: white; padding: 8px 16px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 13px; margin-bottom: 15px; width: auto; }
 
 @media print {
-    body { background: white; margin: 0; padding: 0; }
+    @page { size: A4 portrait; margin: 15mm; }
+    body { background: white; margin: 0; padding: 0; font-size: 12pt; }
     .card, .no-print, .no-print-btn { display: none !important; }
-    #quote-printout { display: block !important; border: none; padding: 0; }
+    #quote-printout { display: block !important; border: none; padding: 0; max-width: 100%; }
 }
 </style>
 
@@ -191,7 +192,6 @@ window.onload = function() {
 };
 
 function initPricesAndSettings() {
-    // Läs eller sätt priser
     for (let key in defaultPrices) {
         if (!localStorage.getItem('pr_' + key)) {
             localStorage.setItem('pr_' + key, defaultPrices[key]);
@@ -202,14 +202,12 @@ function initPricesAndSettings() {
         }
     }
     
-    // Företagsdata standardvärden
     if (!localStorage.getItem('company_name')) localStorage.setItem('company_name', "Norrlands Skogsvård");
     if (!localStorage.getItem('company_info')) localStorage.setItem('company_info', "Luleå, Norrlands Skogsvård\nSkogliga tjänster\nKontakt: norrlandsskogsvard@gmail.com\nOrg.nr: 891101-6015");
     
     document.getElementById('set-company-name').value = localStorage.getItem('company_name');
     document.getElementById('set-company-info').value = localStorage.getItem('company_info');
 
-    // Läs logotyp
     if(localStorage.getItem('ns_saved_logo_v5')) {
         savedLogoData = localStorage.getItem('ns_saved_logo_v5');
         updateLogoViews();
@@ -239,14 +237,34 @@ function updateCompanyViews() {
     document.getElementById('sig-entreprenor-meta').innerText = compName;
 }
 
-function handleLogoUpload(e) {
-    const file = e.target.files[0];
+// OPTIMERAD LOGO-UPPLADDNING
+// Fixar e-variabeln och komprimerar bilden innan den sparas så att localStorage inte kraschar.
+function handleLogoUpload(event) {
+    const file = event.target.files[0];
     if (file) {
         const reader = new FileReader();
-        reader.onload = function(event) {
-            savedLogoData = event.target.result;
-            localStorage.setItem('ns_saved_logo_v5', savedLogoData);
-            updateLogoViews();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                // Skala ner bilden om den är jättestor (skyddar localStorage gränsen på 5MB)
+                const canvasEl = document.createElement('canvas');
+                const MAX_WIDTH = 400;
+                let scaleSize = 1;
+                if(img.width > MAX_WIDTH) {
+                    scaleSize = MAX_WIDTH / img.width;
+                }
+                canvasEl.width = img.width * scaleSize;
+                canvasEl.height = img.height * scaleSize;
+                
+                const ctxEl = canvasEl.getContext('2d');
+                ctxEl.drawImage(img, 0, 0, canvasEl.width, canvasEl.height);
+                
+                // Konvertera tillbaka till Base64 (JPEG, 80% kvalitet)
+                savedLogoData = canvasEl.toDataURL('image/jpeg', 0.8);
+                localStorage.setItem('ns_saved_logo_v5', savedLogoData);
+                updateLogoViews();
+            }
+            img.src = e.target.result;
         };
         reader.readAsDataURL(file);
     }
@@ -269,35 +287,69 @@ function generateStaticDocNumber() {
     currentDocNumber = `NS-${dateStr}-${sessionStorage.getItem('h_doc_rand')}`;
 }
 
+// OPTIMERAD CANVAS (Responsiv och exakta koordinater)
 function setupCanvas() {
     canvas = document.getElementById('sig-pad');
     ctx = canvas.getContext('2d');
-    ctx.strokeStyle = "#1a252f";
-    ctx.lineWidth = 2.5;
+    
+    function resizeCanvas() {
+        const parentWidth = canvas.parentElement.clientWidth;
+        canvas.width = parentWidth;
+        ctx.strokeStyle = "#1a252f";
+        ctx.lineWidth = 2.5;
+        // Återställ ritytan om den ändras
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+    }
+    
+    // Sätt storlek vid start och vid eventuell fönsterändring
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
 
     function getPos(e) {
         let rect = canvas.getBoundingClientRect();
         let clientX = e.touches ? e.touches[0].clientX : e.clientX;
         let clientY = e.touches ? e.touches[0].clientY : e.clientY;
         return {
-            x: (clientX - rect.left) * (canvas.width / rect.width),
-            y: (clientY - rect.top) * (canvas.height / rect.height)
+            x: clientX - rect.left,
+            y: clientY - rect.top
         };
     }
-    function start(e) { drawing = true; let p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); if(e.cancelable) e.preventDefault(); }
-    function move(e) { if(!drawing) return; let p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); if(e.cancelable) e.preventDefault(); }
+    
+    function start(e) { 
+        drawing = true; 
+        let p = getPos(e); 
+        ctx.beginPath(); 
+        ctx.moveTo(p.x, p.y); 
+        if(e.cancelable) e.preventDefault(); 
+    }
+    
+    function move(e) { 
+        if(!drawing) return; 
+        let p = getPos(e); 
+        ctx.lineTo(p.x, p.y); 
+        ctx.stroke(); 
+        if(e.cancelable) e.preventDefault(); 
+    }
+    
     function stop() { drawing = false; }
 
-    canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move); window.addEventListener('mouseup', stop);
-    canvas.addEventListener('touchstart', start, {passive:false}); canvas.addEventListener('touchmove', move, {passive:false}); window.addEventListener('touchend', stop);
+    canvas.addEventListener('mousedown', start); 
+    canvas.addEventListener('mousemove', move); 
+    window.addEventListener('mouseup', stop);
+    canvas.addEventListener('touchstart', start, {passive:false}); 
+    canvas.addEventListener('touchmove', move, {passive:false}); 
+    window.addEventListener('touchend', stop);
 }
 
-function clearSignature() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+function clearSignature() { 
+    ctx.clearRect(0, 0, canvas.width, canvas.height); 
+}
 
 function saveSettings() {
     const inputs = document.querySelectorAll('.card input, .card select, .card textarea');
     inputs.forEach(input => {
-        if(input.id && !input.id.startsWith('pr-') && !input.id.startsWith('set-') && !['logo-upload', 'settings-logo-upload', 'tree-value', 'hm-hojd-input'].includes(input.id)) {
+        if(input.id && !input.id.startsWith('pr-') && !input.id.startsWith('set-') && !['settings-logo-upload', 'tree-value', 'hm-hojd-input'].includes(input.id)) {
             localStorage.setItem('set_' + input.id, input.value);
         }
     });
@@ -382,7 +434,11 @@ function linkDgvToApp(val) {
     saveSettings();
     alert("Diameter överförd till Röjning & Gallring!");
 }
-function resetDgvApp() { diameters = []; updateDgvUI(); document.getElementById('result-output').style.display = "none"; }
+function resetDgvApp() { 
+    diameters = []; 
+    updateDgvUI(); 
+    document.getElementById('result-output').style.display = "none"; 
+}
 
 // --- HM MEDELHÖJD LOGIK ---
 let hmHeights = [];
@@ -421,7 +477,11 @@ function linkHmToApp(val) {
     saveSettings();
     alert("Höjd överförd till Röjning & Gallring!");
 }
-function resetHmApp() { hmHeights = []; updateHmUI(); document.getElementById('hm-result-output').style.display = "none"; }
+function resetHmApp() { 
+    hmHeights = []; 
+    updateHmUI(); 
+    document.getElementById('hm-result-output').style.display = "none"; 
+}
 
 // --- KALKYLERINGSLOGIK ---
 function getRojningData() {
@@ -479,7 +539,7 @@ function getPlanteringData() {
     const arbete = parseFloat(localStorage.getItem('pr_plant_arbete')) || 2.70;
     const mbHa = parseFloat(localStorage.getItem('pr_plant_mb_ha')) || 3000;
 
-    let totPlantor = ha * tathet;
+    let totPlantor = Math.round(ha * tathet);
     let exkl = (totPlantor * plantpris) + (totPlantor * arbete) + (ha * mbHa);
 
     return {
@@ -643,7 +703,7 @@ function renderKörjournalTable() {
             <td style="padding:6px; font-size:11px;">Från: ${r.fran}<br>Till: ${r.till}</td>
             <td style="padding:6px; font-weight:bold;">${r.distans} km</td>
             <td style="padding:6px; font-size:11px; color:#555;">${r.syfte} ${r.regnr ? '<br><small>Bil: '+r.regnr+'</small>':''}</td>
-            <td style="padding:6px; text-align:center;"><button type="button" style="background:var(--danger-color); color:white; padding:3px 6px; font-size:11px;" onclick="deleteKjRow(${r.id})">X</button></td>
+            <td style="padding:6px; text-align:center;"><button type="button" style="background:var(--danger-color); color:white; padding:3px 6px; font-size:11px; border:none; border-radius:3px;" onclick="deleteKjRow(${r.id})">X</button></td>
         `;
         tbody.appendChild(tr);
     });
@@ -676,6 +736,7 @@ function clearEntireCart() {
         cart = [];
         localStorage.removeItem('ns_cart_backup');
         updateCartUI();
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Rensar signatur
     }
 }
 
@@ -801,8 +862,20 @@ function buildFinalQuote() {
     }
     termsBox.innerHTML = termsTemplate;
 
-    document.getElementById('q-print-sig').src = canvas.toDataURL();
-    document.getElementById('q-print-sig').style.display = 'block';
+    // Kontrollera om canvas är ritad på
+    let isCanvasEmpty = true;
+    const pixelBuffer = new Uint32Array(ctx.getImageData(0, 0, canvas.width, canvas.height).data.buffer);
+    for (let i = 0; i < pixelBuffer.length; i++) {
+        if (pixelBuffer[i] !== 0) { isCanvasEmpty = false; break; }
+    }
+
+    const printSigImg = document.getElementById('q-print-sig');
+    if (!isCanvasEmpty) {
+        printSigImg.src = canvas.toDataURL();
+        printSigImg.style.display = 'block';
+    } else {
+        printSigImg.style.display = 'none';
+    }
 
     updateCompanyViews();
     
@@ -1101,7 +1174,7 @@ function buildFinalQuote() {
             <textarea id="set-company-info" rows="3" onchange="saveCompanySettings()"></textarea>
 
             <label>Ladda upp företagslogo (Ersätter standard):</label>
-            <input type="file" id="settings-logo-upload" accept="image/*" onchange="handleLogoUpload(e)">
+            <input type="file" id="settings-logo-upload" accept="image/*" onchange="handleLogoUpload(event)">
         </div>
     </div>
 
@@ -1111,7 +1184,7 @@ function buildFinalQuote() {
         
         <label style="margin-top:15px;">Signera digitalt i fält:</label>
         <div class="signature-container">
-            <canvas id="sig-pad" class="sig-canvas" width="500" height="130"></canvas>
+            <canvas id="sig-pad" class="sig-canvas" height="150"></canvas>
             <button type="button" class="clear-sig-btn" onclick="clearSignature()">Rensa signatur</button>
         </div>
         
