@@ -196,7 +196,6 @@ const defaultPrices = {
     transport_milpris: "45"
 };
 
-// Skogsbolagens prislistor (Referensvärden för jämförelse kr/m3sk netto snitt)
 const bolagPriser = {
     sca: { gallring: 540, drivning: 250 },
     holmen: { gallring: 530, drivning: 255 },
@@ -208,10 +207,17 @@ window.onload = function() {
     loadSettings();
     setupCanvas();
     generateStaticDocNumber();
+    initKörjournal(); // Fixad: Så att körjournalen faktiskt laddas direkt
     
+    // Fixad: Säkrare inläsning av gammal varukorg som kan förhindra krascher
     if (localStorage.getItem('ns_cart_backup')) {
         try {
-            cart = JSON.parse(localStorage.getItem('ns_cart_backup'));
+            let parsedCart = JSON.parse(localStorage.getItem('ns_cart_backup'));
+            if(Array.isArray(parsedCart)) {
+                cart = parsedCart;
+            } else {
+                cart = [];
+            }
         } catch(e) { cart = []; }
     }
     updateCartUI();
@@ -662,154 +668,182 @@ function updateCartUI() {
     });
 }
 
-// --- GENERERA OFFERT & TEXTEXPORT ---
+// --- GENERERA OFFERT & TEXTEXPORT (SÄKERHETSKODAD) ---
 function buildFinalQuote() {
-    if(cart.length === 0) { alert("Varukorgen är tom. Lägg till minst en åtgärd."); return; }
-    saveSettings();
+    try {
+        if(cart.length === 0) { 
+            alert("Varukorgen är tom. Lägg till minst en åtgärd innan du skapar offert."); 
+            return; 
+        }
+        saveSettings();
 
-    const docType = document.getElementById('doc-type').value;
-    
-    let mainTitle = "OFFERT: Skogliga Entreprenadtjänster";
-    if (docType === 'kontrakt') mainTitle = "BESTÄLLNINGSBEKRÄFTELSE & AVTALSKONTRAKT";
-    document.getElementById('q-title').innerText = mainTitle;
-
-    document.getElementById('q-kund').innerText = document.getElementById('quote-kund-namn').value || "Fastighetsägare / Beställare";
-    document.getElementById('q-fastighet').innerText = document.getElementById('quote-fastighet').value || "Ej angiven fastighet";
-    document.getElementById('q-kontakt').innerText = document.getElementById('quote-kontakt').value || "-";
-    
-    const inmatatDatum = document.getElementById('quote-datum').value;
-    const inmatadOrt = document.getElementById('quote-ort').value || "Ort ej angiven";
-    document.getElementById('q-date').innerText = inmatatDatum;
-    
-    let basDatum = inmatatDatum ? new Date(inmatatDatum) : new Date();
-    basDatum.setDate(basDatum.getDate() + 30);
-    document.getElementById('q-valid').innerText = basDatum.toLocaleDateString('sv-SE');
-    document.getElementById('q-number').innerText = currentDocNumber;
-
-    let tableBody = document.querySelector('#quote-printout tbody');
-    tableBody.innerHTML = "";
-
-    let totalKostnadExkl = 0;
-    let totalIntaktExkl = 0;
-    let allaNoteringar = [];
-
-    cart.forEach(item => {
-        let row = document.createElement('tr');
+        const docType = document.getElementById('doc-type') ? document.getElementById('doc-type').value : 'offert';
+        let mainTitle = "OFFERT: Skogliga Entreprenadtjänster";
+        if (docType === 'kontrakt') mainTitle = "BESTÄLLNINGSBEKRÄFTELSE & AVTALSKONTRAKT";
         
-        let sumText = "";
-        if (item.type === 'Gallring') {
-            if (item.exkl >= 0) {
-                totalIntaktExkl += item.exkl;
-                sumText = `+${Math.round(item.exkl).toLocaleString()} kr (Nettointäkt)`;
+        if(document.getElementById('q-title')) document.getElementById('q-title').innerText = mainTitle;
+
+        if(document.getElementById('q-kund')) document.getElementById('q-kund').innerText = document.getElementById('quote-kund-namn').value || "Fastighetsägare / Beställare";
+        if(document.getElementById('q-fastighet')) document.getElementById('q-fastighet').innerText = document.getElementById('quote-fastighet').value || "Ej angiven fastighet";
+        if(document.getElementById('q-kontakt')) document.getElementById('q-kontakt').innerText = document.getElementById('quote-kontakt').value || "-";
+        
+        const inmatatDatum = document.getElementById('quote-datum') ? document.getElementById('quote-datum').value : "";
+        const inmatadOrt = document.getElementById('quote-ort') ? document.getElementById('quote-ort').value : "Ort ej angiven";
+        if(document.getElementById('q-date')) document.getElementById('q-date').innerText = inmatatDatum || new Date().toISOString().split('T')[0];
+        
+        let basDatum = new Date(inmatatDatum);
+        if(isNaN(basDatum.getTime())) { basDatum = new Date(); }
+        basDatum.setDate(basDatum.getDate() + 30);
+        
+        if(document.getElementById('q-valid')) document.getElementById('q-valid').innerText = basDatum.toLocaleDateString('sv-SE');
+        if(document.getElementById('q-number')) document.getElementById('q-number').innerText = currentDocNumber || "NS-001";
+
+        let tableBody = document.querySelector('#quote-printout tbody');
+        if(tableBody) tableBody.innerHTML = "";
+
+        let totalKostnadExkl = 0;
+        let totalIntaktExkl = 0;
+        let allaNoteringar = [];
+
+        cart.forEach(item => {
+            let row = document.createElement('tr');
+            
+            let itemExkl = item.exkl || 0;
+            let itemUnitPr = item.unitPr || 0;
+            let sumText = "";
+
+            if (item.type === 'Gallring') {
+                if (itemExkl >= 0) {
+                    totalIntaktExkl += itemExkl;
+                    sumText = `+${Math.round(itemExkl).toLocaleString()} kr (Nettointäkt)`;
+                } else {
+                    totalKostnadExkl += Math.abs(itemExkl);
+                    sumText = `-${Math.round(Math.abs(itemExkl)).toLocaleString()} kr (Nettokostnad)`;
+                }
             } else {
-                totalKostnadExkl += Math.abs(item.exkl);
-                sumText = `-${Math.round(Math.abs(item.exkl)).toLocaleString()} kr (Nettokostnad)`;
+                totalKostnadExkl += itemExkl;
+                sumText = `${Math.round(itemExkl).toLocaleString()} kr`;
             }
+
+            row.innerHTML = `
+                <td><strong>${item.type || 'Åtgärd'}</strong><br><span style="font-size:11px; color:#555;">${item.spec || ''}</span></td>
+                <td>${item.vol || '-'}</td>
+                <td>${itemUnitPr.toLocaleString()} kr</td>
+                <td>${sumText}</td>
+            `;
+            if(tableBody) tableBody.appendChild(row);
+
+            if (item.noteringar && typeof item.noteringar === 'string' && item.noteringar.trim() !== "") {
+                allaNoteringar.push(`[${item.type}]: ${item.noteringar}`);
+            }
+        });
+
+        let mil = parseFloat(document.getElementById('quote-mil') ? document.getElementById('quote-mil').value : 0) || 0;
+        let milpris = parseFloat(localStorage.getItem('pr_transport_milpris')) || 0;
+        let transportKostnad = mil * milpris;
+        
+        if (transportKostnad > 0 && tableBody) {
+            totalKostnadExkl += transportKostnad;
+            let row = document.createElement('tr');
+            row.innerHTML = `
+                <td><strong>Inställelse- & Transportersättning</strong><br><span style="font-size:11px; color:#555;">Baserat på köravstånd till fastigheten (${mil} mil á ${milpris} kr/mil)</span></td>
+                <td>${mil} mil</td>
+                <td>${milpris} kr</td>
+                <td>${Math.round(transportKostnad).toLocaleString()} kr</td>
+            `;
+            tableBody.appendChild(row);
+        }
+
+        let slutNetto = totalIntaktExkl - totalKostnadExkl;
+        let moms = Math.abs(slutNetto) * 0.25;
+        
+        if(document.getElementById('q-tot-exkl')) document.getElementById('q-tot-exkl').innerText = `${Math.round(slutNetto).toLocaleString()} kr`;
+        if(document.getElementById('q-tot-moms')) document.getElementById('q-tot-moms').innerText = `${Math.round(moms).toLocaleString()} kr`;
+        
+        let totalBoxHtml = "";
+        const timmarEl = document.getElementById('q-tot-timmar');
+        if (slutNetto >= 0) {
+            totalBoxHtml = `<span><strong>Netto att erhålla för skogsägare:</strong></span><span><strong>${Math.round(slutNetto + moms).toLocaleString()} kr (inkl. moms)</strong></span>`;
+            if(timmarEl) timmarEl.innerText = "Skoglig nettointäkt utbetalas till kund efter slutfört och godkänt virkesuttag.";
         } else {
-            totalKostnadExkl += item.exkl;
-            sumText = `${Math.round(item.exkl).toLocaleString()} kr`;
+            totalBoxHtml = `<span><strong>Totalsumma att betala (Kostnad):</strong></span><span><strong>${Math.round(Math.abs(slutNetto) + moms).toLocaleString()} kr (inkl. moms)</strong></span>`;
+            if(timmarEl) timmarEl.innerText = "Faktureras efter slutfört och godkänt utförande, 30 dagar netto.";
+        }
+        if(document.getElementById('q-total-box-wrapper')) document.getElementById('q-total-box-wrapper').innerHTML = totalBoxHtml;
+
+        const noteBox = document.getElementById('q-extra-noteringar');
+        if(noteBox) {
+            if(allaNoteringar.length > 0) {
+                noteBox.style.display = "block"; 
+                noteBox.innerHTML = `<strong>Särskilda noteringar för uppdraget:</strong><br>${allaNoteringar.join('<br>')}`;
+            } else { 
+                noteBox.style.display = "none"; 
+            }
         }
 
-        row.innerHTML = `
-            <td><strong>${item.type}</strong><br><span style="font-size:11px; color:#555;">${item.spec}</span></td>
-            <td>${item.vol}</td>
-            <td>${item.unitPr.toLocaleString()} kr</td>
-            <td>${sumText}</td>
-        `;
-        tableBody.appendChild(row);
+        let harSkogsvard = cart.some(i => i.type === 'Röjning' || i.type === 'Plantering');
+        let harGallring = cart.some(i => i.type === 'Gallring');
+        let harPlan = cart.some(i => i.type === 'Skogsbruksplan');
 
-        if (item.noteringar && item.noteringar.trim() !== "") {
-            allaNoteringar.push(`[${item.type}]: ${item.noteringar}`);
+        let termsText = "<strong>Standardvillkor & Allmänna bestämmelser:</strong><br>";
+        if (harSkogsvard || harGallring) {
+            termsText += "• Fastighetsägaren ansvarar för att tillse att fastighetsgränser and arbetsområden är tillräckligt markerade i fält innan arbetets start.<br>";
         }
-    });
+        if (harGallring) {
+            termsText += "• Volymberäkningar är uppskattningar grundade på aritmetiskt fältstickprov (h_m). Slutlig inmätning sker vid industri/mottagande vält.<br>";
+        }
+        if (harPlan) {
+            termsText += "• Vid upprättande av skogsbruksplan förbinder sig kunden att tillhandahålla eventuellt äldre kartmaterial.<br>";
+        }
+        termsText += "• Betalningsvillkor: 30 dagar netto efter slutlevererat uppdrag och godkänd egenkontroll.";
+        if(document.getElementById('q-terms-text')) document.getElementById('q-terms-text').innerHTML = termsText;
 
-    let mil = parseFloat(document.getElementById('quote-mil').value) || 0;
-    let milpris = parseFloat(localStorage.getItem('pr_transport_milpris')) || 0;
-    let transportKostnad = mil * milpris;
-    
-    if (transportKostnad > 0) {
-        totalKostnadExkl += transportKostnad;
-        let row = document.createElement('tr');
-        row.innerHTML = `
-            <td><strong>Inställelse- & Transportersättning</strong><br><span style="font-size:11px; color:#555;">Baserat på köravstånd till fastigheten (${mil} mil á ${milpris} kr/mil)</span></td>
-            <td>${mil} mil</td>
-            <td>${milpris} kr</td>
-            <td>${Math.round(transportKostnad).toLocaleString()} kr</td>
-        `;
-        tableBody.appendChild(row);
+        const mapLnkEl = document.getElementById('quote-map-link');
+        const qMapEl = document.getElementById('q-map');
+        if(mapLnkEl && qMapEl) {
+            const mapLnk = mapLnkEl.value;
+            if(mapLnk) {
+                qMapEl.style.display = "block";
+                qMapEl.innerHTML = `<strong>Geografiskt underlag (Lantmäteriet):</strong><br><a href="${mapLnk}" target="_blank" style="color:#2980b9; word-break:break-all;">${mapLnk}</a>`;
+            } else { 
+                qMapEl.style.display = "none"; 
+            }
+        }
+
+        if(document.getElementById('sig-entreprenor-meta')) document.getElementById('sig-entreprenor-meta').innerText = `${inmatadOrt}, ${inmatatDatum || new Date().toISOString().split('T')[0]}`;
+        if(document.getElementById('sig-kund-meta')) document.getElementById('sig-kund-meta').innerText = `${inmatadOrt}, ___________`;
+        
+        const printSig = document.getElementById('print-sig');
+        if(printSig && canvas) {
+            printSig.src = canvas.toDataURL();
+        }
+
+        const cardEl = document.querySelector('.card');
+        if(cardEl) cardEl.style.display = 'none';
+        
+        const printoutEl = document.getElementById('quote-printout');
+        if(printoutEl) printoutEl.style.display = 'block';
+        
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch(err) {
+        console.error("Fel vid skapande av offert:", err);
+        alert("Något gick fel när offerten skulle byggas upp. Rensa gärna varukorgen och försök igen. Detaljer: " + err.message);
     }
-
-    let slutNetto = totalIntaktExkl - totalKostnadExkl;
-    let moms = Math.abs(slutNetto) * 0.25;
-    
-    document.getElementById('q-tot-exkl').innerText = `${Math.round(slutNetto).toLocaleString()} kr`;
-    document.getElementById('q-tot-moms').innerText = `${Math.round(moms).toLocaleString()} kr`;
-    
-    let totalBoxHtml = "";
-    if (slutNetto >= 0) {
-        totalBoxHtml = `<span><strong>Netto att erhålla för skogsägare:</strong></span><span><strong>${Math.round(slutNetto + moms).toLocaleString()} kr (inkl. moms)</strong></span>`;
-        document.getElementById('q-tot-timmar').innerText = "Skoglig nettointäkt utbetalas till kund efter slutfört och godkänt virkesuttag.";
-    } else {
-        totalBoxHtml = `<span><strong>Totalsumma att betala (Kostnad):</strong></span><span><strong>${Math.round(Math.abs(slutNetto) + moms).toLocaleString()} kr (inkl. moms)</strong></span>`;
-        document.getElementById('q-tot-timmar').innerText = "Faktureras efter slutfört och godkänt utförande, 30 dagar netto.";
-    }
-    document.getElementById('q-total-box-wrapper').innerHTML = totalBoxHtml;
-
-    const noteBox = document.getElementById('q-extra-noteringar');
-    if(allaNoteringar.length > 0) {
-        noteBox.style.display = "block"; 
-        noteBox.innerHTML = `<strong>Särskilda noteringar för uppdraget:</strong><br>${allaNoteringar.join('<br>')}`;
-    } else { 
-        noteBox.style.display = "none"; 
-    }
-
-    let harSkogsvard = cart.some(i => i.type === 'Röjning' || i.type === 'Plantering');
-    let harGallring = cart.some(i => i.type === 'Gallring');
-    let harPlan = cart.some(i => i.type === 'Skogsbruksplan');
-
-    let termsText = "<strong>Standardvillkor & Allmänna bestämmelser:</strong><br>";
-    if (harSkogsvard || harGallring) {
-        termsText += "• Fastighetsägaren ansvarar för att tillse att fastighetsgränser and arbetsområden är tillräckligt markerade i fält innan arbetets start.<br>";
-    }
-    if (harGallring) {
-        termsText += "• Volymberäkningar är uppskattningar grundade på aritmetiskt fältstickprov (h_m). Slutlig inmätning sker vid industri/mottagande vält.<br>";
-    }
-    if (harPlan) {
-        termsText += "• Vid upprättande av skogsbruksplan förbinder sig kunden att tillhandahålla eventuellt äldre kartmaterial.<br>";
-    }
-    termsText += "• Betalningsvillkor: 30 dagar netto efter slutlevererat uppdrag och godkänd egenkontroll.";
-    document.getElementById('q-terms-text').innerHTML = termsText;
-
-    const mapLnk = document.getElementById('quote-map-link').value;
-    if(mapLnk) {
-        document.getElementById('q-map').style.display = "block";
-        document.getElementById('q-map').innerHTML = `<strong>Geografiskt underlag (Lantmäteriet):</strong><br><a href="${mapLnk}" target="_blank" style="color:#2980b9; word-break:break-all;">${mapLnk}</a>`;
-    } else { 
-        document.getElementById('q-map').style.display = "none"; 
-    }
-
-    document.getElementById('sig-entreprenor-meta').innerText = `${inmatadOrt}, ${inmatatDatum}`;
-    document.getElementById('sig-kund-meta').innerText = `${inmatadOrt}, ___________`;
-    document.getElementById('print-sig').src = canvas.toDataURL();
-
-    document.querySelector('.card').style.display = 'none';
-    document.getElementById('quote-printout').style.display = 'block';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function copyQuoteAsText() {
-    const kund = document.getElementById('quote-kund-namn').value || "Kund";
-    const fastighet = document.getElementById('quote-fastighet').value || "Fastighet";
+    const kund = document.getElementById('quote-kund-namn') ? document.getElementById('quote-kund-namn').value : "Kund";
+    const fastighet = document.getElementById('quote-fastighet') ? document.getElementById('quote-fastighet').value : "Fastighet";
     const nr = currentDocNumber;
     
     let textOut = `--- NORRLANDS SKOGSVÅRD ---\nDokumentnr: ${nr}\nKund: ${kund}\nFastighet: ${fastighet}\n\nSpecifikation:\n`;
     
     cart.forEach(item => {
-        textOut += `- ${item.type}: ${item.vol} | Netto: ${Math.round(item.exkl)} kr\n  (${item.spec})\n`;
+        textOut += `- ${item.type || 'Åtgärd'}: ${item.vol || '-'} | Netto: ${Math.round(item.exkl || 0)} kr\n  (${item.spec || ''})\n`;
     });
     
-    const totText = document.getElementById('q-tot-exkl').innerText;
-    textOut += `\nSlutsumma exkl moms: ${totText} kr\nGenererad i fält via Norrlands Skogsvård App.`;
+    const totText = document.getElementById('q-tot-exkl') ? document.getElementById('q-tot-exkl').innerText : "0 kr";
+    textOut += `\nSlutsumma exkl moms: ${totText}\nGenererad i fält via Norrlands Skogsvård App.`;
     
     navigator.clipboard.writeText(textOut).then(() => {
         showToast("Offertexten har kopierats till urklipp!");
@@ -819,8 +853,8 @@ function copyQuoteAsText() {
 }
 
 function backToApp() { 
-    document.getElementById('quote-printout').style.display = 'none'; 
-    document.querySelector('.card').style.display = 'block'; 
+    if(document.getElementById('quote-printout')) document.getElementById('quote-printout').style.display = 'none'; 
+    if(document.querySelector('.card')) document.querySelector('.card').style.display = 'block'; 
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -882,7 +916,9 @@ function getGpsLocation(fieldId) {
 }
 
 function initKörjournal() {
-    document.getElementById('kj-datum').value = new Date().toISOString().split('T')[0];
+    if(document.getElementById('kj-datum') && !document.getElementById('kj-datum').value) {
+        document.getElementById('kj-datum').value = new Date().toISOString().split('T')[0];
+    }
     renderKörjournalTable();
 }
 
