@@ -1,4 +1,4 @@
-const CACHE_NAME = 'skogskalkylator-pro-v3';
+const CACHE_NAME = 'skogskalkylator-pro-v4';
 const urlsToCache = [
   './',
   './index.html',
@@ -19,9 +19,9 @@ self.addEventListener('fetch', event => {
     caches.match(event.request)
       .then(response => {
         if (response) {
-          return response; // Hittades i cachen
+          return response; // Hämtar från telefonens offline-minne
         }
-        return fetch(event.request); // Hämtar från nätet om det finns täckning
+        return fetch(event.request); // Hämtar från nätet
       })
   );
 });
@@ -33,7 +33,7 @@ self.addEventListener('activate', event => {
       return Promise.all(
         cacheNames.map(cacheName => {
           if (cacheWhitelist.indexOf(cacheName) === -1) {
-            return caches.delete(cacheName); // Rensar gammal cache vid uppdatering
+            return caches.delete(cacheName); // Rensar gammalt skräp och håller appen snabb
           }
         })
       );
