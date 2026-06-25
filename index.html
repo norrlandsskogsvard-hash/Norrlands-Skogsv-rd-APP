@@ -1051,7 +1051,7 @@ function buildFinalQuote() {
             <select id="roj-typ">
                 <option value="normal">Normal ungskogsröjning</option>
                 <option value="omrojning">Eftersatt röjning / Omröjning</option>
-                <option value="underrorjning">Underväxtröjning (inför maskin)</option>
+                <option value="underrorjning">Underväxtröjning</option>
             </select>
             <label>Fältnoteringar (Utskrift):</label>
             <textarea id="roj-noteringar" placeholder="Särskilda instruktioner eller beskrivning av beståndet..." rows="2"></textarea>
@@ -1191,7 +1191,7 @@ function buildFinalQuote() {
             <h3 style="color: var(--accent-color);">⚙️ Global Prislista & Företagsdata</h3>
             <p class="sub" style="margin-top:-4px;">Dessa värden ligger till grund för alla dina kalkylatorer.</p>
             
-            <h4 style="margin:10px 0 5px 0; color:var(--primary-color);">Skogsvård & Entreprenad</h4>
+            <h4 style="margin:10px 0 5px 0; color:var(--primary-color);">Skogsvårdstjänster</h4>
             <div class="row">
                 <div><label>Röjning Timpris (kr/h):</label><input type="number" id="pr-roj_timpris" onchange="savePrice('roj_timpris', this.value)"></div>
                 <div><label>Röjning Maskin (kr/h):</label><input type="number" id="pr-roj_maskin" onchange="savePrice('roj_maskin', this.value)"></div>
@@ -1263,7 +1263,7 @@ function buildFinalQuote() {
 
         <div class="quote-header">
             <div>
-                <div class="quote-title" id="q-title">OFFERT: Skogliga Entreprenadtjänster</div>
+                <div class="quote-title" id="q-title">OFFERT: Skogsvårdstjänster</div>
                 <div style="margin-top:10px; font-size:14px; line-height:1.5;">
                     <strong>Beställare:</strong> <span id="q-kund">-</span><br>
                     <strong>Fastighet:</strong> <span id="q-fastighet">-</span><br>
