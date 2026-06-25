@@ -1,4 +1,4 @@
-const CACHE_NAME = 'skogskalkylator-pro-v4';
+const CACHE_NAME = 'skogskalkylator-pro-v7';
 const urlsToCache = [
   './',
   './index.html',
