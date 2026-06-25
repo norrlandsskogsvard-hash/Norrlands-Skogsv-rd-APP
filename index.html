@@ -66,11 +66,11 @@ input:focus, select:focus, textarea:focus {
 }
 .tab-btn { 
     flex: 1; 
-    min-width: 75px; 
+    min-width: 70px; 
     padding: 12px 4px; 
     background: #f8f9fa; 
     border: 1px solid var(--border-color); 
-    font-size: 12px; 
+    font-size: 11px; 
     font-weight: bold; 
     color: #7f8c8d; 
     cursor: pointer; 
@@ -102,7 +102,6 @@ button { padding: 14px; border: none; border-radius: 6px; cursor: pointer; font-
 .btn-reset { width: 100%; background-color: var(--danger-color); color: white; margin-top: 10px; font-size: 13px; padding: 10px; }
 
 .result { margin-top: 12px; padding: 12px; background: #e8f8f5; border-left: 4px solid var(--secondary-color); border-radius: 4px; font-weight: bold; color: #27ae60; line-height: 1.5; font-size: 15px; }
-.warning-box { margin-top: 8px; padding: 10px; background: #fef9e7; border-left: 4px solid var(--warning-color); color: #b7950b; font-size: 13px; border-radius: 4px; }
 .list { font-size: 14px; color: #555; margin-top: 10px; border-top: 1px solid #eee; padding-top: 8px; max-height: 120px; overflow-y: auto; }
 
 .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0; }
@@ -110,11 +109,11 @@ button { padding: 14px; border: none; border-radius: 6px; cursor: pointer; font-
 .key-btn:active { background: #cbd5e1; }
 
 .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; font-size: 14px; }
-.cart-item button { padding: 6px 10px; font-size: 12px; background: var(--danger-color); color: white; border-radius: 4px; }
+.cart-item button { padding: 6px 10px; font-size: 12px; background: var(--danger-color); color: white; border-radius: 4px; width: auto; }
 
 .signature-container { border: 2px dashed var(--border-color); background: #fff; margin-top: 10px; position: relative; border-radius: 6px; width: 100%; overflow: hidden; }
 .sig-canvas { display: block; width: 100%; height: 180px; background: #fff; cursor: crosshair; touch-action: none; }
-.clear-sig-btn { position: absolute; right: 5px; top: 5px; background: var(--danger-color); color: white; padding: 6px 12px; font-size: 12px; border-radius: 4px; border:none; cursor:pointer; }
+.clear-sig-btn { position: absolute; right: 5px; top: 5px; background: var(--danger-color); color: white; padding: 6px 12px; font-size: 12px; border-radius: 4px; border:none; cursor:pointer; width: auto; }
 
 #quote-printout { display: none; background: white; padding: 35px; max-width: 800px; margin: 0 auto; border: 1px solid #ccc; box-sizing: border-box; }
 .quote-top-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
@@ -155,14 +154,13 @@ let canvas, ctx, drawing = false;
 let currentDocNumber = "";
 let korjournal = [];
 
+// Uppdaterade standardpriser med fokus på Skogsvård
 const defaultPrices = {
     roj_timpris: "550",
     roj_maskin: "100",
-    plant_pris: "3.50",
-    plant_arbete: "3.00",
-    plant_mb_ha: "3500",
-    gallring_pris: "550",
-    gallring_drivning: "280",
+    fallning_grund: "800",
+    fallning_risk: "500",
+    ragang_mpris: "15",
     plan_start: "4500",
     plan_hapris: "200",
     transport_milpris: "50"
@@ -173,8 +171,8 @@ window.onload = function() {
     setupCanvas();
     generateStaticDocNumber();
     
-    if (localStorage.getItem('ns_cart_backup')) {
-        try { cart = JSON.parse(localStorage.getItem('ns_cart_backup')); } catch(e) { cart = []; }
+    if (localStorage.getItem('ns_cart_backup_v2')) {
+        try { cart = JSON.parse(localStorage.getItem('ns_cart_backup_v2')); } catch(e) { cart = []; }
     }
     if (localStorage.getItem('skogskalkyl_korjournal')) {
         try { korjournal = JSON.parse(localStorage.getItem('skogskalkyl_korjournal')); } catch(e) { korjournal = []; }
@@ -340,7 +338,7 @@ function switchTab(tabId, btn) {
     btn.classList.add('active');
 }
 
-// LOGIK FÖR KNAPPSATS - Nu med .5 för både dgv och hm
+// LOGIK FÖR KNAPPSATS (.5 för dgv och hm)
 function pressKey(tab, key) {
     let targetId = (tab === 'dgv') ? 'tree-value' : 'hm-hojd-input';
     const input = document.getElementById(targetId);
@@ -386,13 +384,12 @@ function calculateDgv() {
 
     const resultDiv = document.getElementById('result-output');
     resultDiv.style.display = "block";
-    resultDiv.innerHTML = `Grundytevägd medeldiameter (dgv): <br><span style='font-size: 20px;'>${dgv.toFixed(1)} cm</span><br><button type='button' class='btn-calc-full' style='background-color:var(--accent-color); margin-top:8px;' onclick='linkDgvToApp(${dgv.toFixed(1)})'>Överför diameter till kalkyler</button>`;
+    resultDiv.innerHTML = `Grundytevägd medeldiameter (dgv): <br><span style='font-size: 20px;'>${dgv.toFixed(1)} cm</span><br><button type='button' class='btn-calc-full' style='background-color:var(--accent-color); margin-top:8px;' onclick='linkDgvToApp(${dgv.toFixed(1)})'>Överför diameter till kalkyl</button>`;
 }
 function linkDgvToApp(val) {
     document.getElementById('roj-grovlek').value = val;
-    document.getElementById('gallring-diam').value = val;
     saveSettings();
-    alert("Diameter överförd till Röjning & Gallring!");
+    alert("Diameter överförd till Röjning!");
 }
 function resetDgvApp() { diameters = []; updateDgvUI(); document.getElementById('result-output').style.display = "none"; document.getElementById('tree-value').value=''; }
 
@@ -423,13 +420,12 @@ function calculateHm() {
 
     const resultDiv = document.getElementById('hm-result-output');
     resultDiv.style.display = "block";
-    resultDiv.innerHTML = `Aritmetisk medelhöjd (h<sub>m</sub>): <br><span style='font-size: 20px;'>${aritmetiskHojd.toFixed(1)} m</span><br><button type='button' class='btn-calc-full' style='background-color:var(--accent-color); margin-top:8px;' onclick='linkHmToApp(${aritmetiskHojd.toFixed(1)})'>Överför h<sub>m</sub> till kalkyler</button>`;
+    resultDiv.innerHTML = `Aritmetisk medelhöjd (h<sub>m</sub>): <br><span style='font-size: 20px;'>${aritmetiskHojd.toFixed(1)} m</span><br><button type='button' class='btn-calc-full' style='background-color:var(--accent-color); margin-top:8px;' onclick='linkHmToApp(${aritmetiskHojd.toFixed(1)})'>Överför h<sub>m</sub> till kalkyl</button>`;
 }
 function linkHmToApp(val) {
     document.getElementById('roj-hojd').value = val;
-    document.getElementById('gallring-hojd').value = val;
     saveSettings();
-    alert("Höjd överförd till Röjning & Gallring!");
+    alert("Höjd överförd till Röjning!");
 }
 function resetHmApp() { hmHeights = []; updateHmUI(); document.getElementById('hm-result-output').style.display = "none"; document.getElementById('hm-hojd-input').value=''; }
 
@@ -467,7 +463,7 @@ function getRojningData() {
         spec: `${document.getElementById('roj-typ').options[document.getElementById('roj-typ').selectedIndex].text} (${tradslag}), ${stammar} st/ha, h: ${hojd}m.`,
         vol: `${hektar} ha`,
         unitPr: Math.round(exkl / hektar),
-        exkl: exkl, // POSITIVT VÄRDE FÖR ATT VISAS SOM KOSTNAD
+        exkl: exkl, 
         isIncome: false,
         noteringar: document.getElementById('roj-noteringar').value
     };
@@ -478,89 +474,81 @@ function calculateRojning() {
     let data = getRojningData();
     if(!data) { alert('Fyll i stammar, höjd och hektar.'); return; }
     document.getElementById('roj-result-output').style.display='block';
-    document.getElementById('roj-result-output').innerHTML = `Kostnad exkl. moms: ${Math.round(data.exkl).toLocaleString()} kr (${data.unitPr} kr/ha)`;
+    document.getElementById('roj-result-output').innerHTML = `Pris exkl. moms: ${Math.round(data.exkl).toLocaleString()} kr (${data.unitPr} kr/ha)`;
 }
 
-function getPlanteringData() {
-    const ha = parseFloat(document.getElementById('plant-hektar').value);
-    const tathet = parseFloat(document.getElementById('plant-tathet').value);
-    if(isNaN(ha)||isNaN(tathet)) return null;
+// NY: Trädfällning / Problemträd
+function getFallningData() {
+    const antalTrad = parseFloat(document.getElementById('fall-antal').value);
+    const riskTrad = parseFloat(document.getElementById('fall-risk').value) || 0;
+    const upparbetning = parseFloat(document.getElementById('fall-timmar').value) || 0;
 
-    const plantpris = parseFloat(localStorage.getItem('pr_plant_pris')) || 3.50;
-    const arbete = parseFloat(localStorage.getItem('pr_plant_arbete')) || 3.00;
-    const mbHa = parseFloat(localStorage.getItem('pr_plant_mb_ha')) || 3500;
+    if(isNaN(antalTrad)) return null;
 
-    let totPlantor = Math.round(ha * tathet);
-    let exkl = (totPlantor * plantpris) + (totPlantor * arbete) + (ha * mbHa);
+    const grundpris = parseFloat(localStorage.getItem('pr_fallning_grund')) || 800;
+    const riskpris = parseFloat(localStorage.getItem('pr_fallning_risk')) || 500;
+    const timpris = parseFloat(localStorage.getItem('pr_roj_timpris')) || 550; // Använder samma timpris som röjning
+
+    let exkl = (antalTrad * grundpris) + (riskTrad * riskpris) + (upparbetning * timpris);
 
     return {
-        type: 'Plantering',
-        spec: `Sättning av ca ${totPlantor.toLocaleString()} st plantor inkl. markberedning.`,
-        vol: `${ha} ha`,
-        unitPr: Math.round(exkl / ha),
-        exkl: exkl, // POSITIVT VÄRDE FÖR ATT VISAS SOM KOSTNAD
+        type: 'Avancerad Trädfällning',
+        spec: `${antalTrad} st träd (varav ${riskTrad} st riskträd). ${upparbetning > 0 ? upparbetning + 'h upparbetning/bortforsling.' : 'Endast fällning.'}`,
+        vol: `${antalTrad} st`,
+        unitPr: Math.round(exkl / antalTrad),
+        exkl: exkl,
         isIncome: false,
-        noteringar: document.getElementById('plant-noteringar').value
+        noteringar: document.getElementById('fall-noteringar').value
     };
 }
 
-function calculatePlantering() {
+function calculateFallning() {
     saveSettings();
-    let data = getPlanteringData();
-    if(!data) { alert('Fyll i hektar och planttäthet.'); return; }
-    document.getElementById('plant-result-output').style.display='block';
-    document.getElementById('plant-result-output').innerHTML = `Kostnad exkl. moms: ${Math.round(data.exkl).toLocaleString()} kr (${data.unitPr} kr/ha)`;
+    let data = getFallningData();
+    if(!data) { alert('Fyll i antal träd.'); return; }
+    document.getElementById('fall-result-output').style.display='block';
+    document.getElementById('fall-result-output').innerHTML = `Pris exkl. moms: ${Math.round(data.exkl).toLocaleString()} kr`;
 }
 
-function getGallringData() {
-    const ha = parseFloat(document.getElementById('gallring-hektar').value);
-    const gy = parseFloat(document.getElementById('gallring-gy').value);
-    const hojd = parseFloat(document.getElementById('gallring-hojd').value);
-    const uttagPct = parseFloat(document.getElementById('gallring-uttag').value);
-    const si = document.getElementById('gallring-si').value;
-    if(isNaN(ha)||isNaN(gy)||isNaN(hojd)||isNaN(uttagPct)) return null;
+// NY: Rågångsrensning / Gränsmarkering
+function getRagangData() {
+    const meter = parseFloat(document.getElementById('ragang-meter').value);
+    const terrang = document.getElementById('ragang-terrang').value;
+    const markering = document.getElementById('ragang-markering').value;
 
-    const virkespris = parseFloat(localStorage.getItem('pr_gallring_pris')) || 550;
-    const drivningskostnad = parseFloat(localStorage.getItem('pr_gallring_drivning')) || 280;
+    if(isNaN(meter)) return null;
 
-    let volymPerHa = gy * hojd * 0.45; 
-    let totalVolym = volymPerHa * ha;
-    let gallradVolym = totalVolym * (uttagPct / 100);
+    const meterpris = parseFloat(localStorage.getItem('pr_ragang_mpris')) || 15;
     
-    // Om virkespris är högre än drivningskostnad blir detta ett positivt värde (Intäkt för kunden)
-    let nettoExkl = (gallradVolym * virkespris) - (gallradVolym * drivningskostnad);
+    let faktor = 1.0;
+    if(terrang === 'svar') faktor = 1.4;
+    if(terrang === 'mycket_svar') faktor = 1.8;
+    
+    let markeringsTillägg = 0;
+    if(markering === 'snitsel') markeringsTillägg = meter * 2; // 2 kr/m extra
+    if(markering === 'stolpar') markeringsTillägg = meter * 6; // 6 kr/m extra
 
-    let warning = "";
-    if (uttagPct > 35) warning = "⚠️ Varning: Uttaget överstiger 35%. Hög risk för stormfällning!";
-    let kvarvarandeGy = gy * (1 - (uttagPct/100));
-    if (kvarvarandeGy < 15 && hojd > 12) warning += (warning ? "<br>" : "") + "⚠️ Varning: Kvarvarande grundyta understiger 15 m²/ha.";
+    let exkl = (meter * meterpris * faktor) + markeringsTillägg;
 
     return {
-        type: 'Gallring',
-        spec: `Beståndsgallring (${si}). Uttag ${uttagPct}%, estimerat uttag: ${Math.round(gallradVolym)} m³sk.`,
-        vol: `${ha} ha`,
-        unitPr: Math.round(Math.abs(nettoExkl) / ha),
-        exkl: Math.abs(nettoExkl), 
-        isIncome: nettoExkl >= 0, // Avgör om det är intäkt eller kostnad för kunden
-        warning: warning,
-        noteringar: document.getElementById('gallring-noteringar').value
+        type: 'Rågångsrensning / Gränsmarkering',
+        spec: `Röjning av ${meter}m fastighetsgräns (${document.getElementById('ragang-terrang').options[document.getElementById('ragang-terrang').selectedIndex].text}). ${document.getElementById('ragang-markering').options[document.getElementById('ragang-markering').selectedIndex].text}.`,
+        vol: `${meter} m`,
+        unitPr: Math.round(exkl / meter),
+        exkl: exkl,
+        isIncome: false,
+        noteringar: document.getElementById('ragang-noteringar').value
     };
 }
 
-function calculateGallring() {
+function calculateRagang() {
     saveSettings();
-    let data = getGallringData();
-    if(!data) { alert('Fyll i alla gallringsfält.'); return; }
-    
-    let resBox = document.getElementById('gallring-result-output');
-    resBox.style.display = 'block';
-    let statusText = data.isIncome ? "Beräknat Netto (Intäkt för skogsägare)" : "Beräknad Drivningskostnad";
-    resBox.innerHTML = `${statusText}: ${Math.round(data.exkl).toLocaleString()} kr`;
-    
-    let warnBox = document.getElementById('gallring-warn-box');
-    if(data.warning) { warnBox.style.display = 'block'; warnBox.innerHTML = data.warning; } 
-    else { warnBox.style.display = 'none'; }
+    let data = getRagangData();
+    if(!data) { alert('Fyll i uppskattat antal meter gräns.'); return; }
+    document.getElementById('ragang-result-output').style.display='block';
+    document.getElementById('ragang-result-output').innerHTML = `Pris exkl. moms: ${Math.round(data.exkl).toLocaleString()} kr (${data.unitPr} kr/m)`;
 }
+
 
 function getPlanData() {
     const hektar = parseFloat(document.getElementById('plan-hektar').value);
@@ -576,7 +564,7 @@ function getPlanData() {
         spec: `Nyutskrift av skogsbruksplan omfattande ${hektar} ha, ${skiften + 1} skiften.`,
         vol: `1 st`,
         unitPr: Math.round(exkl),
-        exkl: exkl, // POSITIVT VÄRDE
+        exkl: exkl, 
         isIncome: false,
         noteringar: document.getElementById('plan-noteringar').value
     };
@@ -587,7 +575,7 @@ function calculatePlan() {
     let data = getPlanData();
     if(!data) { alert('Fyll i areal.'); return; }
     document.getElementById('plan-result-output').style.display = 'block';
-    document.getElementById('plan-result-output').innerHTML = `Kostnad exkl. moms: ${Math.round(data.exkl).toLocaleString()} kr`;
+    document.getElementById('plan-result-output').innerHTML = `Pris exkl. moms: ${Math.round(data.exkl).toLocaleString()} kr`;
 }
 
 // --- KÖRJOURNAL ---
@@ -662,28 +650,28 @@ function renderKörjournalTable() {
 function addToCart(type) {
     let itemData = null;
     if(type === 'roj') itemData = getRojningData();
-    if(type === 'plant') itemData = getPlanteringData();
-    if(type === 'gallring') itemData = getGallringData();
+    if(type === 'fall') itemData = getFallningData();
+    if(type === 'ragang') itemData = getRagangData();
     if(type === 'plan') itemData = getPlanData();
 
     if(!itemData) { alert("Fyll i kalkylen fullständigt först."); return; }
     
     cart.push(itemData);
-    localStorage.setItem('ns_cart_backup', JSON.stringify(cart));
+    localStorage.setItem('ns_cart_backup_v2', JSON.stringify(cart));
     updateCartUI();
-    alert(`${itemData.type} tillagd i fältdokumentet!`);
+    alert(`${itemData.type} tillagd i offerten!`);
 }
 
 function removeFromCart(index) {
     cart.splice(index, 1);
-    localStorage.setItem('ns_cart_backup', JSON.stringify(cart));
+    localStorage.setItem('ns_cart_backup_v2', JSON.stringify(cart));
     updateCartUI();
 }
 
 function clearEntireCart() {
     if(confirm("Tömma hela dokumentet?")) {
         cart = [];
-        localStorage.removeItem('ns_cart_backup');
+        localStorage.removeItem('ns_cart_backup_v2');
         updateCartUI();
         ctx.clearRect(0, 0, canvas.width, canvas.height); 
     }
@@ -702,10 +690,7 @@ function updateCartUI() {
     cart.forEach((item, index) => {
         let div = document.createElement('div');
         div.className = "cart-item";
-        let typLabel = item.isIncome ? "Intäkt" : "Kostnad";
-        let colorStyle = item.isIncome ? "color: #27ae60;" : "color: #e74c3c;";
-        
-        div.innerHTML = `<div><strong>${item.type}</strong><br><span style="${colorStyle} font-weight:bold;">${Math.round(item.exkl).toLocaleString()} kr (${typLabel})</span></div><button type='button' onclick='removeFromCart(${index})'>Ta bort</button>`;
+        div.innerHTML = `<div><strong>${item.type}</strong><br><span style="color: var(--primary-color); font-weight:bold;">${Math.round(item.exkl).toLocaleString()} kr</span></div><button type='button' onclick='removeFromCart(${index})'>Ta bort</button>`;
         container.appendChild(div);
     });
 }
@@ -715,7 +700,7 @@ function buildFinalQuote() {
     saveSettings();
 
     const docType = document.getElementById('doc-type').value;
-    let mainTitle = "OFFERT: Skogliga tjänster";
+    let mainTitle = "OFFERT: Skogsvård & Entreprenad";
     if (docType === 'kontrakt') mainTitle = "BESTÄLLNINGSBEKRÄFTELSE & AVTALSKONTRAKT";
     document.getElementById('q-title').innerText = mainTitle;
 
@@ -735,26 +720,17 @@ function buildFinalQuote() {
     tableBody.innerHTML = "";
 
     let totalKostnadExkl = 0;
-    let totalIntaktExkl = 0;
     let allaNoteringar = [];
 
     cart.forEach(item => {
         let row = document.createElement('tr');
-        let typText = "";
-        
-        if (item.isIncome) {
-            totalIntaktExkl += item.exkl;
-            typText = `Intäkt`;
-        } else {
-            totalKostnadExkl += item.exkl;
-            typText = `Kostnad`;
-        }
+        totalKostnadExkl += item.exkl;
         
         row.innerHTML = `
             <td><strong>${item.type}</strong><br><small style="color:#666;">${item.spec}</small></td>
             <td>${item.vol}</td>
             <td>${item.unitPr ? item.unitPr.toLocaleString() + ' kr' : '-'}</td>
-            <td style="text-align:right;"><strong>${Math.round(item.exkl).toLocaleString()} kr</strong><br><small style="color:#7f8c8d;">(${typText})</small></td>
+            <td style="text-align:right; font-weight:bold;">${Math.round(item.exkl).toLocaleString()} kr</td>
         `;
         tableBody.appendChild(row);
 
@@ -772,32 +748,22 @@ function buildFinalQuote() {
             <td><strong>Reseersättning & Transport</strong><br><small style="color:#666;">Maskintransport och inställelsebil.</small></td>
             <td>${mil} mil</td>
             <td>${milpris} kr/mil</td>
-            <td style="text-align:right;"><strong>${Math.round(travelCost).toLocaleString()} kr</strong><br><small style="color:#7f8c8d;">(Kostnad)</small></td>
+            <td style="text-align:right; font-weight:bold;">${Math.round(travelCost).toLocaleString()} kr</td>
         `;
         tableBody.appendChild(row);
     }
 
-    // SLUTBERÄKNING - Inga minustecken här!
-    let nettoTotal = totalIntaktExkl - totalKostnadExkl; // Plus = Skogsägaren får pengar, Minus = Skogsägaren betalar
-    let absolutNetto = Math.abs(nettoTotal);
-    let moms = absolutNetto * 0.25;
-    let bruttoTotal = absolutNetto + moms;
+    // SLUTBERÄKNING (Inga minustecken, endast totalkostnad för kund)
+    let moms = totalKostnadExkl * 0.25;
+    let bruttoTotal = totalKostnadExkl + moms;
 
-    document.getElementById('q-tot-exkl').innerText = Math.round(absolutNetto).toLocaleString() + " kr";
+    document.getElementById('q-tot-exkl').innerText = Math.round(totalKostnadExkl).toLocaleString() + " kr";
     document.getElementById('q-tot-moms').innerText = Math.round(moms).toLocaleString() + " kr";
     
     let boxWrapper = document.getElementById('q-total-box-wrapper');
-    if (nettoTotal > 0) {
-        // Det blev ett överskott (Intäkterna var större än Kostnaderna)
-        boxWrapper.innerHTML = `<span>Skogsägaren erhåller (inkl. moms):</span><span>${Math.round(bruttoTotal).toLocaleString()} kr</span>`;
-        boxWrapper.style.color = "#27ae60"; // Grönt
-        boxWrapper.style.borderColor = "#27ae60";
-    } else {
-        // Det blev en kostnad (Kostnaderna var större än Intäkterna, eller bara kostnader fanns)
-        boxWrapper.innerHTML = `<span>Skogsägaren betalar (inkl. moms):</span><span>${Math.round(bruttoTotal).toLocaleString()} kr</span>`;
-        boxWrapper.style.color = "#333"; // Standard textfärg
-        boxWrapper.style.borderColor = "#cbd5e1";
-    }
+    boxWrapper.innerHTML = `<span>Totalt att betala (inkl. moms):</span><span>${Math.round(bruttoTotal).toLocaleString()} kr</span>`;
+    boxWrapper.style.color = "#333";
+    boxWrapper.style.borderColor = "var(--primary-color)";
 
     let termsBox = document.getElementById('q-terms-text');
     let mapLink = document.getElementById('quote-map-link').value;
@@ -805,9 +771,9 @@ function buildFinalQuote() {
     
     let termsTemplate = "";
     if (docType === 'kontrakt') {
-        termsTemplate = `<strong>AVTALSVILLKOR & BESTÄLLNING:</strong> Arbetet utförs enligt gällande skogsnormer och god skogsvårdssed. Betalningsvillkor 30 dagar netto efter slutfört arbete och godkänd besiktning. Parterna godkänner härmed de allmänna villkoren för skogsentreprenad. Eventuell slutlig inmätning och avräkning för virke görs av VMF/Biometria.${mapHtml}`;
+        termsTemplate = `<strong>AVTALSVILLKOR & BESTÄLLNING:</strong> Arbetet utförs enligt gällande skogsnormer och god skogsvårdssed. Betalningsvillkor 30 dagar netto efter slutfört arbete och godkänd besiktning. Parterna godkänner härmed de allmänna villkoren för skogsentreprenad.${mapHtml}`;
     } else {
-        termsTemplate = `<strong>OFFERTVILLKOR:</strong> Detta är ett kostnads- och intäktsförslag. Offerten är giltig till och med angivet datum ovan. Priserna förutsätter normala terrängförhållanden vid utförandetillfället. Definitiva volymer fastställs vid slutlig mätning.${mapHtml}`;
+        termsTemplate = `<strong>OFFERTVILLKOR:</strong> Detta är ett kostnadsförslag. Offerten är giltig till och med angivet datum ovan. Priserna förutsätter normala terrängförhållanden vid utförandetillfället.${mapHtml}`;
     }
     
     if(allaNoteringar.length > 0) {
@@ -873,9 +839,9 @@ function buildFinalQuote() {
             <button type="button" class="tab-btn active" onclick="switchTab('dgv-tab', this)">d<sub>gv</sub></button>
             <button type="button" class="tab-btn" onclick="switchTab('hm-tab', this)">h<sub>m</sub></button>
             <button type="button" class="tab-btn" onclick="switchTab('rojning-tab', this)">Röjning</button>
-            <button type="button" class="tab-btn" onclick="switchTab('plant-tab', this)">Plant</button>
-            <button type="button" class="tab-btn" onclick="switchTab('gallring-tab', this)">Gallring</button>
-            <button type="button" class="tab-btn" onclick="switchTab('plan-tab', this)">Plan</button>
+            <button type="button" class="tab-btn" onclick="switchTab('fallning-tab', this)">Trädfällning</button>
+            <button type="button" class="tab-btn" onclick="switchTab('ragang-tab', this)">Rågång</button>
+            <button type="button" class="tab-btn" onclick="switchTab('plan-tab', this)">Bruksplan</button>
             <button type="button" class="tab-btn" onclick="switchTab('kj-tab', this)">Körjournal</button>
             <button type="button" class="tab-btn" style="color: var(--accent-color);" onclick="switchTab('settings-tab', this)">⚙️ Inst.</button>
         </div>
@@ -976,72 +942,71 @@ function buildFinalQuote() {
             <select id="roj-typ">
                 <option value="normal">Normal ungskogsröjning</option>
                 <option value="omrojning">Eftersatt röjning / Omröjning</option>
-                <option value="underrorjning">Underväxtröjning (inför gallring)</option>
+                <option value="underrorjning">Underväxtröjning (inför maskin)</option>
             </select>
             <label>Fältnoteringar (Utskrift):</label>
             <textarea id="roj-noteringar" placeholder="Särskilda instruktioner eller beskrivning av beståndet..." rows="2"></textarea>
             
             <button type="button" class="btn-calc-full" onclick="calculateRojning()">Beräkna Röjning</button>
             <div id="roj-result-output" class="result" style="display:none;"></div>
-            <button type="button" class="btn-cart" onclick="addToCart('roj')">➕ Lägg till i fältdokument</button>
+            <button type="button" class="btn-cart" onclick="addToCart('roj')">➕ Lägg till i offert</button>
         </div>
 
-        <div id="plant-tab" class="tab-content">
-            <h3>Planteringskalkyl</h3>
+        <div id="fallning-tab" class="tab-content">
+            <h3>Trädfällning / Problemträd</h3>
             <div class="row">
-                <div><label>Areal (ha):</label><input type="number" id="plant-hektar" placeholder="Ha" step="0.1"></div>
-                <div><label>Planttäthet (st/ha):</label><input type="number" id="plant-tathet" value="2500"></div>
+                <div><label>Totalt antal träd:</label><input type="number" id="fall-antal" placeholder="St"></div>
+                <div><label>Varav riskträd (nära hus/ledning):</label><input type="number" id="fall-risk" placeholder="St" value="0"></div>
             </div>
+            <label>Upparbetning / Bortforsling (Timmar):</label>
+            <input type="number" id="fall-timmar" placeholder="Tidsåtgång för att kapa upp eller forsla bort" value="0" step="0.5">
             <label>Fältnoteringar (Utskrift):</label>
-            <textarea id="plant-noteringar" placeholder="T.ex. barrotsplantor gran, täckrot tall..." rows="2"></textarea>
+            <textarea id="fall-noteringar" placeholder="Beskrivning av träd (t.ex. stor gran över tak)..." rows="2"></textarea>
             
-            <button type="button" class="btn-calc-full" onclick="calculatePlantering()">Beräkna Plantering</button>
-            <div id="plant-result-output" class="result" style="display:none;"></div>
-            <button type="button" class="btn-cart" onclick="addToCart('plant')">➕ Lägg till i fältdokument</button>
+            <button type="button" class="btn-calc-full" onclick="calculateFallning()">Beräkna Trädfällning</button>
+            <div id="fall-result-output" class="result" style="display:none;"></div>
+            <button type="button" class="btn-cart" onclick="addToCart('fall')">➕ Lägg till i offert</button>
         </div>
 
-        <div id="gallring-tab" class="tab-content">
-            <h3>Gallringskalkyl (Estimerad volym & netto)</h3>
+        <div id="ragang-tab" class="tab-content">
+            <h3>Rågångsrensning / Gränsmarkering</h3>
             <div class="row">
-                <div><label>Areal (ha):</label><input type="number" id="gallring-hektar" placeholder="Ha" step="0.1"></div>
-                <div><label>Grundyta före (m²/ha):</label><input type="number" id="gallring-gy" placeholder="T.ex. 28"></div>
-            </div>
-            <div class="row">
-                <div><label>Högsta höjd h<sub>m</sub> (m):</label><input type="number" id="gallring-hojd" placeholder="M"></div>
-                <div><label>Medeldiameter dgv (cm):</label><input type="number" id="gallring-diam" placeholder="Cm"></div>
-            </div>
-            <div class="row">
-                <div><label>Uttagsandel (%):</label><input type="number" id="gallring-uttag" value="30" max="100"></div>
+                <div><label>Totalt meter gräns:</label><input type="number" id="ragang-meter" placeholder="m"></div>
                 <div>
-                    <label>Bonitet / Ståndortsindex:</label>
-                    <select id="gallring-si">
-                        <option value="Medium (T20-T24)">Medium bonitet</option>
-                        <option value="Hög (T26+)">Hög bonitet</option>
-                        <option value="Låg (Under T20)">Låg bonitet</option>
+                    <label>Terräng & Framkomlighet:</label>
+                    <select id="ragang-terrang">
+                        <option value="normal">Normal</option>
+                        <option value="svar">Svår / Tät (+40%)</option>
+                        <option value="mycket_svar">Mycket svår / Blött (+80%)</option>
                     </select>
                 </div>
             </div>
+            <label>Markering / Uppmärkning:</label>
+            <select id="ragang-markering">
+                <option value="ingen">Ingen extra markering (endast röjning)</option>
+                <option value="snitsel">Bandning / Snitsling</option>
+                <option value="stolpar">Uppsättning av rågångsstolpar/käppar</option>
+            </select>
             <label>Fältnoteringar (Utskrift):</label>
-            <textarea id="gallring-noteringar" placeholder="T.ex. första gallring, stickvägsbredd..." rows="2"></textarea>
+            <textarea id="ragang-noteringar" placeholder="Beskrivning av rågångens skick..." rows="2"></textarea>
             
-            <button type="button" class="btn-calc-full" onclick="calculateGallring()">Beräkna Gallringsnetto</button>
-            <div id="gallring-result-output" class="result" style="display:none;"></div>
-            <div id="gallring-warn-box" class="warning-box" style="display:none;"></div>
-            <button type="button" class="btn-cart" onclick="addToCart('gallring')">➕ Lägg till i fältdokument</button>
+            <button type="button" class="btn-calc-full" onclick="calculateRagang()">Beräkna Rågång</button>
+            <div id="ragang-result-output" class="result" style="display:none;"></div>
+            <button type="button" class="btn-cart" onclick="addToCart('ragang')">➕ Lägg till i offert</button>
         </div>
 
         <div id="plan-tab" class="tab-content">
             <h3>Skogsbruksplan</h3>
             <div class="row">
                 <div><label>Total areal (ha):</label><input type="number" id="plan-hektar" placeholder="Areal"></div>
-                <div><label>Antal extra skiften:</label><input type="number" id="plan-skiften" value="0" min="0"></div>
+                <div><label>Antal extra skiften (utöver 1):</label><input type="number" id="plan-skiften" value="0" min="0"></div>
             </div>
             <label>Fältnoteringar (Utskrift):</label>
-            <textarea id="plan-noteringar" placeholder="T.ex. certifieringsanpassning, ajourhållning..." rows="2"></textarea>
+            <textarea id="plan-noteringar" placeholder="T.ex. PEFC/FSC anpassning, ajourhållning..." rows="2"></textarea>
             
             <button type="button" class="btn-calc-full" onclick="calculatePlan()">Beräkna Planpris</button>
             <div id="plan-result-output" class="result" style="display:none;"></div>
-            <button type="button" class="btn-cart" onclick="addToCart('plan')">➕ Lägg till i fältdokument</button>
+            <button type="button" class="btn-cart" onclick="addToCart('plan')">➕ Lägg till i offert</button>
         </div>
 
         <div id="kj-tab" class="tab-content">
@@ -1066,7 +1031,7 @@ function buildFinalQuote() {
                 <div><label>Distans (km):</label><input type="number" id="kj-distans" placeholder="0" readonly style="background:#f0f4f8;"></div>
             </div>
             <div class="row">
-                <div><label>Syfte med resan:</label><input type="text" id="kj-syfte" placeholder="T.ex. Syn/Inventering"></div>
+                <div><label>Syfte med resan:</label><input type="text" id="kj-syfte" placeholder="T.ex. Kundbesök"></div>
                 <div><label>Bil / Regnr:</label><input type="text" id="kj-regnr" placeholder="XYZ123"></div>
             </div>
             <button type="button" class="btn-calc-full" style="background-color: var(--accent-color);" onclick="addKörjournalRow()">Spara resa i journalen</button>
@@ -1092,25 +1057,17 @@ function buildFinalQuote() {
             <h3 style="color: var(--accent-color);">⚙️ Global Prislista & Företagsdata</h3>
             <p class="sub" style="margin-top:-4px;">Dessa värden ligger till grund för alla dina kalkylatorer.</p>
             
-            <h4 style="margin:10px 0 5px 0; color:var(--primary-color);">Röjning</h4>
+            <h4 style="margin:10px 0 5px 0; color:var(--primary-color);">Skogsvård & Entreprenad</h4>
             <div class="row">
-                <div><label>Timpris (kr/tim):</label><input type="number" id="pr-roj_timpris" onchange="savePrice('roj_timpris', this.value)"></div>
-                <div><label>Maskinkostnad (kr/tim):</label><input type="number" id="pr-roj_maskin" onchange="savePrice('roj_maskin', this.value)"></div>
+                <div><label>Röjning Timpris (kr/h):</label><input type="number" id="pr-roj_timpris" onchange="savePrice('roj_timpris', this.value)"></div>
+                <div><label>Röjning Maskin (kr/h):</label><input type="number" id="pr-roj_maskin" onchange="savePrice('roj_maskin', this.value)"></div>
             </div>
-
-            <h4 style="margin:10px 0 5px 0; color:var(--primary-color);">Plantering</h4>
             <div class="row">
-                <div><label>Plantpris st (kr):</label><input type="number" step="0.01" id="pr-plant_pris" onchange="savePrice('plant_pris', this.value)"></div>
-                <div><label>Arbetskostnad st (kr):</label><input type="number" step="0.01" id="pr-plant_arbete" onchange="savePrice('plant_arbete', this.value)"></div>
+                <div><label>Fällning Grundpris (kr/träd):</label><input type="number" id="pr-fallning_grund" onchange="savePrice('fallning_grund', this.value)"></div>
+                <div><label>Fällning Risktillägg (kr/träd):</label><input type="number" id="pr-fallning_risk" onchange="savePrice('fallning_risk', this.value)"></div>
             </div>
-            <label>Markberedning (kr/ha):</label>
-            <input type="number" id="pr-plant_mb_ha" onchange="savePrice('plant_mb_ha', this.value)">
-
-            <h4 style="margin:10px 0 5px 0; color:var(--primary-color);">Gallring (Snittvärden)</h4>
-            <div class="row">
-                <div><label>Virkespris (kr/m³sk):</label><input type="number" id="pr-gallring_pris" onchange="savePrice('gallring_pris', this.value)"></div>
-                <div><label>Drivningskostnad (kr/m³sk):</label><input type="number" id="pr-gallring_drivning" onchange="savePrice('gallring_drivning', this.value)"></div>
-            </div>
+            <label>Rågångsrensning (kr/meter):</label>
+            <input type="number" id="pr-ragang_mpris" onchange="savePrice('ragang_mpris', this.value)">
 
             <h4 style="margin:10px 0 5px 0; color:var(--primary-color);">Skogsbruksplan & Resor</h4>
             <div class="row">
@@ -1191,8 +1148,7 @@ function buildFinalQuote() {
             <tbody></tbody>
         </table>
 
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-top:30px;">
-            <div style="font-size:12px; color:#555; max-width:50%;" id="q-tot-timmar"></div>
+        <div style="display:flex; justify-content:flex-end; align-items:flex-start; margin-top:30px;">
             <div style="width: 320px;">
                 <div style="display: flex; justify-content: space-between; font-size:14px; margin-bottom:6px;">
                     <span>Delsumma exkl. moms:</span><span id="q-tot-exkl">-</span>
@@ -1200,7 +1156,7 @@ function buildFinalQuote() {
                 <div style="display: flex; justify-content: space-between; font-size:14px; margin-bottom:6px;">
                     <span>Moms (25%):</span><span id="q-tot-moms">-</span>
                 </div>
-                <div class="quote-total-box" id="q-total-box-wrapper" style="display: flex; justify-content: space-between; font-weight: bold; border: 2px solid var(--border-color);">
+                <div class="quote-total-box" id="q-total-box-wrapper" style="display: flex; justify-content: space-between; font-weight: bold; border: 2px solid var(--primary-color);">
                 </div>
             </div>
         </div>
