@@ -206,7 +206,7 @@ function initPricesAndSettings() {
     }
     
     if (!localStorage.getItem('company_name')) localStorage.setItem('company_name', "Norrlands Skogsvård");
-    if (!localStorage.getItem('company_info')) localStorage.setItem('company_info', "Webb: www.skogsvård.se\nE-post: info@skogsvård.se\nOrg.nr: XXXXXX-XXXX");
+    if (!localStorage.getItem('company_info')) localStorage.setItem('company_info', "Webb: www.skogsvård.se\nE-post: norrlandsskogsvard@gmail.com\nOrg.nr: 891101-6015");
     
     document.getElementById('set-company-name').value = localStorage.getItem('company_name');
     document.getElementById('set-company-info').value = localStorage.getItem('company_info');
@@ -808,7 +808,7 @@ function buildFinalQuote() {
     saveSettings();
 
     const docType = document.getElementById('doc-type').value;
-    let mainTitle = "OFFERT: Skogsvård & Entreprenad";
+    let mainTitle = "OFFERT: Skogsvårdstjänster";
     if (docType === 'kontrakt') mainTitle = "BESTÄLLNINGSBEKRÄFTELSE & AVTALSKONTRAKT";
     document.getElementById('q-title').innerText = mainTitle;
 
@@ -879,7 +879,7 @@ function buildFinalQuote() {
     
     let termsTemplate = "";
     if (docType === 'kontrakt') {
-        termsTemplate = `<strong>AVTALSVILLKOR & BESTÄLLNING:</strong> Arbetet utförs enligt gällande skogsnormer och god skogsvårdssed. Betalningsvillkor 30 dagar netto efter slutfört arbete och godkänd besiktning. Parterna godkänner härmed de allmänna villkoren för skogsentreprenad.${mapHtml}`;
+        termsTemplate = `<strong>AVTALSVILLKOR & BESTÄLLNING:</strong> Arbetet utförs enligt gällande skogsnormer och god skogsvårdssed. Betalningsvillkor 30 dagar netto efter slutfört arbete och godkänd besiktning. Parterna godkänner härmed de allmänna villkoren för skogsvårdstjänster.${mapHtml}`;
     } else {
         termsTemplate = `<strong>OFFERTVILLKOR:</strong> Detta är ett kostnadsförslag. Offerten är giltig till och med angivet datum ovan. Priserna förutsätter normala terrängförhållanden vid utförandetillfället.${mapHtml}`;
     }
